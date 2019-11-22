@@ -37,6 +37,13 @@ def task_build():
         'params': PARAMS
     }
 
+def task_remove():
+    """Remove the Docker image for the current project"""
+    return {
+        'actions': ['docker rmi %s -f' % IMAGE],
+        'params': PARAMS
+    }
+
 def task_interactive():
     """Run the Docker container in interactive mode"""
     def run():
