@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Surround Visualise</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css" />
+        <link rel="stylesheet" href="./style.css" />
+        <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+
+        <!-- development version, includes helpful console warnings -->
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    </head>
+    <body>
+        <div id="app">
+        <nav class="navbar" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="./">
+                    <p><strong>THRESHY </strong><span> | Visualiser Tool</span></p>
+                </a>
+        
+                <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+        
+            <div id="navbarBasicExample" class="navbar-menu">
+                <div class="navbar-start">
+                    <a class="navbar-item" href="./">
+                        Home
+                    </a>
+                </div>
+        
+                <div class="navbar-end">
+        
+                </div>
+            </div>
+        </nav>
+        <hr class="hr" style="margin-top: 0"/> 
+
+        <div class="container">
+            <h1 class="title">Classification Visualiser</h1>
+            <button v-on:click="newModal.isActive = true" class="button is-success">New Visualisation</button>
+
+            <div v-if="content.isActive">
+                <hr class="hr" />
+
+                <h2 class="title is-4">Probability Thresholds:</h2>
+                <div class="columns">
+                    <div v-for="threshold in thresholds" class="column">
+                        <slider v-model="threshold.value" :slider-label="threshold.name"></slider>
+                    </div>
+                </div>
+                <hr class="hr" />
+
+                <div class="columns">
+                    <div class="column">
+                        <h2 class="title is-4">Confusion Matrix:</h2>
+                        <confusion-matrix :report="content.report"></confusion-matrix>
+                    </div>
+                    <div class="column" style="clear: both">
+                        <h2 class="title is-4">Cost Estimation:</h2>
+                        <confusion-matrix is-editable name="cost-matrix" :report="content.costMatrix" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
+                    </div>
+                </div>
+
+                <hr style="clear: both;" class="hr" />
+
+                <h2 class="title is-4">Metrics:</h2>
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Accuracy</th>
+                            <th>Cohen Kappa Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <td>
+                            {{ content.report.accuracy_score }}
+                        </td>
+                        <td>
+                            {{ content.report.cohen_kappa_score }}
+                        </td>
+                    </tbody>
+                </table>
+
+                <table class="table is-fullwidth is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Accuracy</th>
+                            <th>F1-Score</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>Support</th>
+                        </tr>
+                    </thead>
+                    <tbody v-if="content.report.report != null">
+                        <tr v-for="label in content.report.classes">
+                            <td>{{ label }}</td>
+                            <td>{{ content.report.report[label]['accuracy'] }}</td>
+                            <td>{{ content.report.report[label]['f1-score'] }}</td>
+                            <td>{{ content.report.report[label]['precision'] }}</td>
+                            <td>{{ content.report.report[label]['recall'] }}</td>
+                            <td>{{ content.report.report[label]['support'] }}</td>
+                        </tr>
+                        <tr>
+                            <td>macro avg</td>
+                            <td></td>
+                            <td>{{ content.report.report['macro avg']['f1-score'] }}</td>
+                            <td>{{ content.report.report['macro avg']['precision'] }}</td>
+                            <td>{{ content.report.report['macro avg']['recall'] }}</td>
+                            <td>{{ content.report.report['macro avg']['support'] }}</td>
+                        </tr>
+                        <tr>
+                            <td>weighted avg</td>
+                            <td></td>
+                            <td>{{ content.report.report['weighted avg']['f1-score'] }}</td>
+                            <td>{{ content.report.report['weighted avg']['precision'] }}</td>
+                            <td>{{ content.report.report['weighted avg']['recall'] }}</td>
+                            <td>{{ content.report.report['weighted avg']['support'] }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div v-bind:class="{ 'is-active': newModal.isActive }" class="modal">
+                <div class="modal-background"></div>
+                
+                <div class="modal-card">
+                    <div v-if="newModal.hasError" class="notification is-danger">
+                        <button v-on:click="newModal.hasError = false" class="delete"></button>
+                        <p>
+                            <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
+                            <span><strong>ERROR:</strong> {{ newModal.errorMessage }} </span>
+                        </p>
+                    </div>
+                    <div class="modal-card-head">
+                        <div class="modal-card-title">New Visualisation</div>
+                        <button v-on:click="newModal.isActive = false" class="delete"></button>
+                    </div>
+                    <div class="modal-card-body">
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">CSV File:</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <div class="file has-name">
+                                            <label class="file-label">
+                                                <input v-on:change="onFileQueue" class="file-input" type="file" />
+                                                <span class="file-cta">
+                                                    <span class="file-icon"><i class="fas fa-upload"></i></span>
+                                                    <span class="file-label">Browse for CSV...</span>
+                                                </span>
+                                                <span class="file-name">{{ newModal.selectedFile != null ? newModal.selectedFile.name : "None selected" }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">True Column: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.truthColumn" class="input" type="text" placeholder="Default: ground-truth" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Predict Column: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.predictColumn" class="input" type="text" placeholder="Default: predict" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Probability Column: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.probabilityColumn" class="input" type="text" placeholder="Default: confidence" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Separator: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.separator" class="input" type="text" placeholder="Default: ," />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-card-foot">
+                        <button v-on:click="upload" v-bind:class="{ 'is-loading': newModal.isLoading }" class="button is-success">Upload</button>
+                        <button v-on:click="newModal.isActive = false" class="button is-danger">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <hr class="hr" style="clear: both" />
+            <p>Generated by <a href="https://github.com/a2i2/surround">Surround</a></p>
+        </div>
+        </div>
+
+        <!-- Import the custom Vue scripts -->
+        <script type="text/javascript" src="./slider.js"></script>
+        <script type="text/javascript" src="./confusion_matrix.js"></script>
+        <script type="text/javascript" src="./visualise_web_app.js"></script>
+    </body>
+</html> 
