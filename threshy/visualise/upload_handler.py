@@ -10,7 +10,9 @@ class UploadHandler(tornado.web.RequestHandler):
     def post(self):
         if 'file' not in self.request.files:
             self.set_status(400)
-            self.write("Bad request")
+            self.write({
+                "errorMessage": "No file included in the request!"
+            })
             return
 
         gt_label = self.get_body_argument("groundTruthLabel", default="ground-truth")
@@ -28,9 +30,25 @@ class UploadHandler(tornado.web.RequestHandler):
         file_contents.columns = [i.strip() for i in file_contents.columns]
         file_contents.fillna(value="UNKNOWN", inplace=True)
 
-        if gt_label not in file_contents or pred_label not in file_contents:
+        if gt_label not in file_contents:
             self.set_status(400)
-            self.write("Bad request")
+            self.write({
+                "errorMessage": "Specified ground truth label was not found in the file uploaded!"
+            })
+            return
+
+        if pred_label not in file_contents:
+            self.set_status(400)
+            self.write({
+                "errorMessage": "Specified prediction label was not found in the file uploaded!"
+            })
+            return
+
+        if prob_label != "confidence" and prob_label not in file_contents:
+            self.set_status(400)
+            self.write({
+                "errorMessage": "Specified probability label was not found in the file uploaded!"
+            })
             return
 
         y_true = file_contents[gt_label]

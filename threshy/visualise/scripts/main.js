@@ -56,8 +56,8 @@ function uploadCSV(file, gtLabel, predLabel, probLabel, separator) {
             if (request.readyState == 4) {
                 if (request.status == 200)
                     resolve(JSON.parse(request.response));
-                else
-                    reject();
+                else if (request.status == 400)
+                    reject(JSON.parse(request.response));
             }
         }
         request.open("POST", "./upload_csv", true);
@@ -216,11 +216,11 @@ var app = new Vue({
                     app.content.isActive = true;
                     app.content.report = response;
                 },
-                () => {
-                    // Reset modal and show error
-                    app.resetNewModal();
+                error => {
+                    // Show error
+                    app.newModal.isLoading = false;
                     app.newModal.hasError = true;
-                    app.newModal.errorMessage = "Failed to upload the CSV file! Make sure the file is valid!"
+                    app.newModal.errorMessage = error.errorMessage;
                 });
         }
     }
