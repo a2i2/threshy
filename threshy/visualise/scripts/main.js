@@ -111,16 +111,19 @@ var app = new Vue({
             costMatrix: {
                 confusion_matrix: null,
                 classes: null,
-            }
-        },
-        thresholds: []
+            },
+            thresholds: []
+        }
     },
     computed: {
         report() {
-            return this.content.report
+            return this.content.report;
+        },
+        thresholds() {
+            return this.content.thresholds;
         },
         thresholdGroups() {
-            const thresholds = this.thresholds;
+            const thresholds = this.content.thresholds;
             const groupSize = 3;
             const results = [];
 
@@ -134,7 +137,7 @@ var app = new Vue({
         report: {
             handler: function() {
                 // Get the thresholds from the cookies
-                this.thresholds = this.content.report.classes.map(label => { 
+                this.content.thresholds = this.content.report.classes.map(label => { 
                     var v = getCookie(label + "_threshold")
                     return { 
                         name: label, 
@@ -160,7 +163,7 @@ var app = new Vue({
         thresholds: {
             handler: function() {
                 // Update the thresholds cookies
-                this.thresholds.forEach(threshold => {
+                this.content.thresholds.forEach(threshold => {
                     document.cookie = threshold.name + "_threshold=" + threshold.value;
                 });
             },
