@@ -75,6 +75,8 @@ def task_prod():
     }
 
 def task_jupyter():
+    """Run an instance of jupyter notebook linked to this project"""
+
     # Allow for auto reload to be enabled and import modules from project package
     ipython_config = "c.InteractiveShellApp.extensions.append('autoreload')\n"
     ipython_config += "c.InteractiveShellApp.exec_lines = "
