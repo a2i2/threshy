@@ -50,8 +50,8 @@
                 <hr class="hr" />
 
                 <h2 class="title is-4">Probability Thresholds:</h2>
-                <div class="columns">
-                    <div v-for="threshold in thresholds" class="column">
+                <div v-for="group in thresholdGroups" class="columns">
+                    <div v-for="threshold in group" class="column is-one-third">
                         <slider v-model="threshold.value" :slider-label="threshold.name"></slider>
                     </div>
                 </div>

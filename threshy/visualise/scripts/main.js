@@ -118,6 +118,16 @@ var app = new Vue({
     computed: {
         report() {
             return this.content.report
+        },
+        thresholdGroups() {
+            const thresholds = this.thresholds;
+            const groupSize = 3;
+            const results = [];
+
+            for (var i = 0; i < thresholds.length; i += groupSize)
+                results.push(thresholds.slice(i, i + groupSize));
+
+            return results;
         }
     },
     watch: {
