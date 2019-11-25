@@ -22,7 +22,7 @@ const slider = {
                 </div>
                 <div class="field">
                     <div class="control">
-                        <input class="input" type="text" style="width: 80px" v-bind:value="value" v-on:input="$emit('input', $event.target.value, eventData)" />
+                        <input class="input" type="text" style="width: 80px" v-bind:value="value" v-on:change="$emit('change', $event.target.value, eventData)" v-on:input="$emit('input', $event.target.value, eventData)" />
                     </div>
                 </div>
             </div>
