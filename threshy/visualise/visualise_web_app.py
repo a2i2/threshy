@@ -6,6 +6,7 @@ import tornado.web
 from .dashboard import Dashboard
 from .metrics_handler import MetricsHandler
 from .upload_handler import UploadHandler
+from .cost_handler import CostHandler
 
 class MyStaticFileHandler(tornado.web.StaticFileHandler):
     def set_extra_headers(self, path):
@@ -29,6 +30,7 @@ class VisualiseWebApp(tornado.web.Application):
             (r'/', Dashboard, None),
             (r'/(.+\.(js|css))', MyStaticFileHandler, {"path": os.path.dirname(__file__)}),
             (r'/metrics', MetricsHandler, None),
+            (r'/cost_matrix', CostHandler, None),
             (r'/upload_csv', UploadHandler, None)
         ]
 

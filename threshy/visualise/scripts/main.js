@@ -42,14 +42,22 @@ function getCookie(cname) {
     return "";
 }
 
-function uploadCSV(file, gtLabel, predLabel, probLabel, separator) {
+function uploadCSV(file, inputs) {
     return new Promise((resolve, reject) => {
         var formData = new FormData();
         formData.append("file", file);
-        formData.append("groundTruthLabel", gtLabel);
-        formData.append("predictLabel", predLabel);
-        formData.append("probabilityLabel", probLabel);
-        formData.append("separator", separator);
+        formData.append("idLabel", inputs.idLabel);
+        formData.append("groundTruthLabel", inputs.gtLabel);
+        formData.append("rejectLabel", inputs.rejectLabel);
+        formData.append("minValue", inputs.minValue);
+        formData.append("maxValue", inputs.maxValue);
+        formData.append("separator", inputs.separator);
+
+        if (inputs.targetLabel != null)
+            formData.append("targetLabel", inputs.targetLabel);
+
+        if (inputs.probLabel != null)
+            formData.append("probabilityLabel", inputs.probLabel);
 
         var request = new XMLHttpRequest();
         request.onreadystatechange = function() {
@@ -73,11 +81,43 @@ function checkForSession(app) {
             // Show metrics, etc.
             app.content.isActive = true;
             app.content.report = response;
+
+            // Remove the request from the queue
+            app.currentRequests.splice(app.currentRequests.indexOf(request), 1);
         }
     }
 
     request.open("GET", "./metrics", true);
     request.send();
+
+    // Track this request in a list
+    app.currentRequests.push(request);
+}
+
+function fetchCostMatrix(app) {
+    const request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+        if (request.readyState == 4 && request.status == 200) {
+            response = JSON.parse(request.response);
+            // Show new results
+            app.content.costResults = response;
+
+            // Remove the request from the queue
+            app.currentRequests.splice(app.currentRequests.indexOf(request), 1);
+        }
+    }
+
+    request.open("POST", "./cost_matrix", true);
+    request.setRequestHeader("Content-Type", "application/json");
+    request.send(JSON.stringify({
+        matrices: app.content.report.matrices,
+        costMatrix: app.content.costMatrix.matrix,
+        portionSize: parseInt(app.content.portionSize),
+        estimateSize: parseInt(app.content.estimateSize)
+    }));
+
+    // Track this request in a list
+    app.currentRequests.push(request);
 }
 
 function checkValue(val, def) {
@@ -91,9 +131,13 @@ var app = new Vue({
             isActive: false,
             isLoading: false,
             selectedFile: null,
+            idColumn: null,
             truthColumn: null,
-            predictColumn: null,
+            targetLabel: null,
+            rejectLabel: null,
             probabilityColumn: null,
+            min: 0,
+            max: 1,
             separator: null,
             hasError: false,
             errorMessage: ""
@@ -101,23 +145,33 @@ var app = new Vue({
         content: {
             isActive: false,
             report: {
-                confusion_matrix: null,
-                classes: null,
-                report: null,
-                normalized_confusion_matrix: null,
-                accuracy_score: null,
-                cohen_kappa_score: null
+                labels: null,
+                matrices: null,
+                summary: null
             },
+            portionSize: 1000,
+            estimateSize: 10000,
             costMatrix: {
-                confusion_matrix: null,
+                matrix: null,
                 classes: null,
             },
-            thresholds: []
-        }
+            costResults: null,
+            thresholds: [],
+            selectedMatrixIndex: 0
+        },
+        currentRequests: []
     },
     computed: {
         report() {
             return this.content.report;
+        },
+        matrices() {
+            return this.content.report.matrices.map(matrix => {
+                return {
+                    matrix: matrix,
+                    classes: this.content.report.labels
+                }
+            });
         },
         thresholds() {
             return this.content.thresholds;
@@ -131,13 +185,16 @@ var app = new Vue({
                 results.push(thresholds.slice(i, i + groupSize));
 
             return results;
+        },
+        isLoading() {
+            return this.currentRequests.length > 0; 
         }
     },
     watch: {
         report: {
             handler: function() {
                 // Get the thresholds from the cookies
-                this.content.thresholds = this.content.report.classes.map(label => { 
+                this.content.thresholds = this.content.report.labels.map(label => { 
                     var v = getCookie(label + "_threshold")
                     return { 
                         name: label, 
@@ -153,17 +210,20 @@ var app = new Vue({
                 }
                 else {
                     this.content.costMatrix = {
-                        confusion_matrix: populateNDimArray(createNDimArray([this.report.classes.length, this.report.classes.length]), 0),
-                        classes: this.report.classes
+                        matrix: populateNDimArray(createNDimArray([3, 3]), 0),
+                        classes: this.content.report.labels
                     };
                 }
+
+                // Update the cost matrix if the report has changed
+                fetchCostMatrix(this);
             },
             deep: true
         },
         thresholds: {
             handler: function() {
-                // Update the thresholds cookies
                 this.content.thresholds.forEach(threshold => {
+                    // Update the thresholds cookies
                     document.cookie = threshold.name + "_threshold=" + threshold.value;
                 });
             },
@@ -179,27 +239,40 @@ var app = new Vue({
     methods: {
         onNewCostMatrix: function(matrix) {
             this.content.costMatrix = {
-                confusion_matrix: matrix,
-                classes: this.content.report.classes
-            }
-
+                matrix: matrix,
+                classes: this.content.report.labels
+            };
             document.cookie = "cost_matrix=" + JSON.stringify(this.content.costMatrix)
-        },
-        onThresholdChange: function(val, className) {
-            document.cookie = className + "_threshold=" + val; 
+
+            fetchCostMatrix(this);
         },
         onFileQueue: function(event) {
             this.newModal.selectedFile = event.target.files[0];
             event.target.value = null;
+        },
+        onThresholdChange: function(value, label) {
+            document.cookie = label + "_threshold=" + value;
+            checkForSession(this);
+        },
+        onTargetLabelChange: function(event) {
+            const newIndex = this.content.report.labels.indexOf(event.target.value);
+            this.content.selectedMatrixIndex = newIndex;
+        },
+        updateCost: function(event) {
+            fetchCostMatrix(this);
         },
         resetNewModal: function() {
             app.newModal = {
                 isActive: true,
                 isLoading: false,
                 selectedFile: null,
+                idColumn: null,
                 truthColumn: null,
-                predictColumn: null,
+                targetLabel: null,
+                rejectLabel: null,
                 probabilityColumn: null,
+                min: 0,
+                max: 1,
                 separator: null,
                 hasError: false,
                 errorMessage: ""
@@ -212,13 +285,19 @@ var app = new Vue({
             app.newModal.isLoading = true;
 
             // Get the values from the input fields or default them if empty
-            const gtLabel = checkValue(this.newModal.truthColumn, "ground-truth");
-            const predLabel = checkValue(this.newModal.predictColumn, "predict");
-            const probLabel = checkValue(this.newModal.probabilityColumn, "confidence");
-            const separator = checkValue(this.newModal.separator, ",");
+            const inputs = {
+                idLabel: checkValue(this.newModal.idColumn, "id"),
+                gtLabel: checkValue(this.newModal.truthColumn, "ground_truth"),
+                probLabel: checkValue(this.newModal.probabilityColumn, null),
+                targetLabel: checkValue(this.newModal.targetLabel, null),
+                rejectLabel: checkValue(this.newModal.rejectLabel, "REJECT"),
+                minValue: checkValue(this.newModal.min, 0),
+                maxValue: checkValue(this.newModal.max, 1),
+                separator: checkValue(this.newModal.separator, ",")
+            };
 
             // Upload the CSV file with the user specified properties
-            uploadCSV(app.newModal.selectedFile, gtLabel, predLabel, probLabel, separator)
+            uploadCSV(app.newModal.selectedFile, inputs)
                 .then(response => {
                     // Hide modal
                     app.clearCookies();

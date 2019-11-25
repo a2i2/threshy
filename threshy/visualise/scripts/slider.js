@@ -11,13 +11,13 @@ const slider = {
     },
     template: `
         <div class="field is-horizontal">
-            <div class="field-label">
-                <label class="label">{{ sliderLabel }}:</label>
+            <div class="field-label" style="max-width: 200px; overflow: hidden;">
+                <label class="label" :title="sliderLabel">{{ sliderLabel }}:</label>
             </div>
             <div class="field-body">
                 <div class="field" style="padding-top: 5px">
                     <div class="control">
-                        <input v-on:input="$emit('input', $event.target.value, eventData)" v-bind:value="value" type="range" min="0" max="1" step="0.001" class="slider">
+                        <input v-on:change="$emit('change', $event.target.value, eventData)" v-on:input="$emit('input', $event.target.value, eventData)" v-bind:value="value" type="range" min="0" max="1" step="0.01" class="slider">
                     </div>
                 </div>
                 <div class="field">

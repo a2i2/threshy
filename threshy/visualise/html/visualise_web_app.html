@@ -43,90 +43,116 @@
         <hr class="hr" style="margin-top: 0"/> 
 
         <div class="container">
-            <h1 class="title">Classification Visualiser</h1>
+            <h1 class="title">Classification Visualiser
+                <span v-if="isLoading" class="icon" style="margin-left: 10px"><i class="fas fa-sync fa-spin"></i></span>
+            </h1>
             <button v-on:click="newModal.isActive = true" class="button is-success">New Visualisation</button>
 
             <div v-if="content.isActive">
                 <hr class="hr" />
 
-                <h2 class="title is-4">Probability Thresholds:</h2>
+                <h2 class="title is-4">
+                    Probability Thresholds: 
+                </h2>
                 <div v-for="group in thresholdGroups" class="columns">
                     <div v-for="threshold in group" class="column is-one-third">
-                        <slider v-model="threshold.value" :slider-label="threshold.name"></slider>
+                        <slider v-on:change="onThresholdChange" v-model="threshold.value" :slider-label="threshold.name" :event-data="threshold.name"></slider>
                     </div>
                 </div>
+                <hr class="hr" />
+
+                <h2 class="title is-4">Summary:</h2>
+                <table class="table is-fullwidth is-hoverable">
+                    <tr>
+                        <td><strong>True Positives</strong></td>
+                        <td>{{ content.report.summary[0] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>False Positives</strong></td>
+                        <td>{{ content.report.summary[1] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Missed Positives</strong></td>
+                        <td>{{ content.report.summary[2] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rejects</strong></td>
+                        <td>{{ content.report.summary[3] }}</td>
+                    </tr>
+                </table>
                 <hr class="hr" />
 
                 <div class="columns">
                     <div class="column">
                         <h2 class="title is-4">Confusion Matrix:</h2>
-                        <confusion-matrix :report="content.report"></confusion-matrix>
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Target Label:</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <div class="select is-fullwidth">
+                                            <select v-on:change="onTargetLabelChange">
+                                                <option v-for="(label, index) in content.report.labels" v-bind:selected="index == content.selectedMatrixIndex">{{ label }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <confusion-matrix :report="matrices[content.selectedMatrixIndex]"></confusion-matrix>
+                        <div style="clear: both;">
+                            <p><strong>Vertical Axis:</strong> Actual</p>
+                            <p><strong>Horizontal Axis:</strong> Predicted</p>
+                        </div>
                     </div>
                     <div class="column" style="clear: both">
                         <h2 class="title is-4">Cost Estimation:</h2>
+
+                        <div class="field is-horizontal" style="clear: both">
+                            <div class="field-label">
+                                <label class="label">Portion Size:</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input v-model="content.portionSize" v-on:input="updateCost" class="input" type="number" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Estimate Size:</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input v-model="content.estimateSize" v-on:input="updateCost" class="input" type="number" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <confusion-matrix is-editable name="cost-matrix" :report="content.costMatrix" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
+
+                        <table class="table is-fullwidth" style="clear: both">
+                            <tr>
+                                <td><strong>Total True Positive Cost:</strong></td>
+                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[0]) : "N/A" }}</td>
+                                <td><strong>Total False Positive Cost:</strong></td>
+                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[1]) : "N/A" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Missed Positive Cost:</strong></td>
+                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[2]) : "N/A" }}</td>
+                                <td><strong>Total Reject Cost:</strong></td>
+                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[3]) : "N/A" }}</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
-
-                <hr style="clear: both;" class="hr" />
-
-                <h2 class="title is-4">Metrics:</h2>
-
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Accuracy</th>
-                            <th>Cohen Kappa Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <td>
-                            {{ content.report.accuracy_score }}
-                        </td>
-                        <td>
-                            {{ content.report.cohen_kappa_score }}
-                        </td>
-                    </tbody>
-                </table>
-
-                <table class="table is-fullwidth is-hoverable">
-                    <thead>
-                        <tr>
-                            <th>Label</th>
-                            <th>Accuracy</th>
-                            <th>F1-Score</th>
-                            <th>Precision</th>
-                            <th>Recall</th>
-                            <th>Support</th>
-                        </tr>
-                    </thead>
-                    <tbody v-if="content.report.report != null">
-                        <tr v-for="label in content.report.classes">
-                            <td>{{ label }}</td>
-                            <td>{{ content.report.report[label]['accuracy'] }}</td>
-                            <td>{{ content.report.report[label]['f1-score'] }}</td>
-                            <td>{{ content.report.report[label]['precision'] }}</td>
-                            <td>{{ content.report.report[label]['recall'] }}</td>
-                            <td>{{ content.report.report[label]['support'] }}</td>
-                        </tr>
-                        <tr>
-                            <td>macro avg</td>
-                            <td></td>
-                            <td>{{ content.report.report['macro avg']['f1-score'] }}</td>
-                            <td>{{ content.report.report['macro avg']['precision'] }}</td>
-                            <td>{{ content.report.report['macro avg']['recall'] }}</td>
-                            <td>{{ content.report.report['macro avg']['support'] }}</td>
-                        </tr>
-                        <tr>
-                            <td>weighted avg</td>
-                            <td></td>
-                            <td>{{ content.report.report['weighted avg']['f1-score'] }}</td>
-                            <td>{{ content.report.report['weighted avg']['precision'] }}</td>
-                            <td>{{ content.report.report['weighted avg']['recall'] }}</td>
-                            <td>{{ content.report.report['weighted avg']['support'] }}</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
 
             <div v-bind:class="{ 'is-active': newModal.isActive }" class="modal">
@@ -166,33 +192,33 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">ID Column: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.idColumn" class="input" type="text" placeholder="Default: id" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                 
                         <div class="field is-horizontal">
                             <div class="field-label">
-                                <label class="label">True Column: </label>
+                                <label class="label">Ground T Column: </label>
                             </div>
                             <div class="field-body">
                                 <div class="field">
                                     <div class="control is-expanded">
-                                        <input v-model="newModal.truthColumn" class="input" type="text" placeholder="Default: ground-truth" />
+                                        <input v-model="newModal.truthColumn" class="input" type="text" placeholder="Default: ground_truth" />
                                     </div>
                                 </div>
                             </div>
                         </div>
-    
-                        <div class="field is-horizontal">
-                            <div class="field-label">
-                                <label class="label">Predict Column: </label>
-                            </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <div class="control is-expanded">
-                                        <input v-model="newModal.predictColumn" class="input" type="text" placeholder="Default: predict" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-    
+
                         <div class="field is-horizontal">
                             <div class="field-label">
                                 <label class="label">Probability Column: </label>
@@ -200,7 +226,59 @@
                             <div class="field-body">
                                 <div class="field">
                                     <div class="control is-expanded">
-                                        <input v-model="newModal.probabilityColumn" class="input" type="text" placeholder="Default: confidence" />
+                                        <input v-model="newModal.probabilityColumn" class="input" type="text" placeholder="Default: None" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Reject Label: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.rejectLabel" class="input" type="text" placeholder="Default: REJECT" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Target Label: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.targetLabel" class="input" type="text" placeholder="Default: None" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Min: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.min" class="input" type="number" placeholder="Default: 0" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field is-horizontal">
+                            <div class="field-label">
+                                <label class="label">Max: </label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control is-expanded">
+                                        <input v-model="newModal.max" class="input" type="number" placeholder="Default: 1" />
                                     </div>
                                 </div>
                             </div>
@@ -226,7 +304,7 @@
                 </div>
             </div>
             <hr class="hr" style="clear: both" />
-            <p></p>
+            <p>Alex Cummaudo & Scott Barnett</p>
         </div>
         </div>
 
