@@ -133,27 +133,28 @@ def summarise_results(all_results):
             all_results[:,0][:,1].sum(),
             all_results[:,:,2].sum()])
 
-def get_results(df, inputs, ground_truth_path=None):
-    print(inputs)
+def retrieve_ground_truth(df, inputs, labels, mapping, path=None):
+    if path and not os.path.exists(path):
+        ground_truth = prepare_ground_truth(df, inputs, mapping)
+        np_ground_truth = ground_truth[labels].to_numpy()
+        np.save(path, np_ground_truth)
+    elif path:
+        np_ground_truth = np.load(path)
+    else:
+        ground_truth = prepare_ground_truth(df, inputs, mapping)
+        np_ground_truth = ground_truth[labels].to_numpy()
 
+    return np_ground_truth
+
+def get_results(df, inputs, ground_truth_path=None):
     labels = prepare_labels(df, inputs)
 
     normalise_probs_in_place(df, inputs, labels)
     probabilities = derive_probabilities(df, inputs)
 
     mapping = {label: i for i, label in enumerate(labels)}
-
+    np_ground_truth = retrieve_ground_truth(df, inputs, labels, mapping, ground_truth_path)
     np_probs = probabilities[labels].to_numpy()
-
-    if ground_truth_path and not os.path.exists(ground_truth_path):
-        ground_truth = prepare_ground_truth(df, inputs, mapping)
-        np_ground_truth = ground_truth[labels].to_numpy()
-        np.save(ground_truth_path, np_ground_truth)
-    elif ground_truth_path:
-        np_ground_truth = np.load(ground_truth_path)
-    else:
-        ground_truth = prepare_ground_truth(df, inputs, mapping)
-        np_ground_truth = ground_truth[labels].to_numpy()
 
     if 'thresholds' in inputs:
         new_threshold = np.asarray(inputs['thresholds'], dtype=np.double)
