@@ -120,6 +120,40 @@ function fetchCostMatrix(app) {
     app.currentRequests.push(request);
 }
 
+function requestOptimisation(app) {
+    return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if (request.readyState == 4) {
+                if (request.status == 200) {
+                    response = JSON.parse(request.response);
+
+                    // Set thresholds to new optimised ones
+                    for (var i = 0; i < app.content.thresholds.length; i++) {
+                        Vue.set(app.content.thresholds, i, {
+                            name: app.content.thresholds[i].name,
+                            value: response.thresholds[i]
+                        });
+                    }
+
+                    // Refresh the report
+                    checkForSession(app);
+                }
+    
+                // Remove the request from the queue
+                app.currentRequests.splice(app.currentRequests.indexOf(request), 1);
+                resolve();
+            }
+        }
+    
+        request.open("GET", "./optimise", true);
+        request.send();
+    
+        // Track this request in a list
+        app.currentRequests.push(request);
+    });
+}
+
 function checkValue(val, def) {
     return val == null || val === "" ? def : val; 
 }
@@ -144,6 +178,7 @@ var app = new Vue({
         },
         content: {
             isActive: false,
+            isOptimising: false,
             report: {
                 labels: null,
                 matrices: null,
@@ -260,6 +295,12 @@ var app = new Vue({
         },
         updateCost: function(event) {
             fetchCostMatrix(this);
+        },
+        optimise: function() {
+            this.content.isOptimising = true;
+            requestOptimisation(this).then(() => {
+                app.content.isOptimising = false;
+            });
         },
         resetNewModal: function() {
             app.newModal = {

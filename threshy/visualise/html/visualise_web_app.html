@@ -46,7 +46,7 @@
             <h1 class="title">Classification Visualiser
                 <span v-if="isLoading" class="icon" style="margin-left: 10px"><i class="fas fa-sync fa-spin"></i></span>
             </h1>
-            <button v-on:click="newModal.isActive = true" class="button is-success">New Visualisation</button>
+            <button v-on:click="newModal.isActive = true" class="button is-success"><span class="icon"><i class="fas fa-plus"></i></span><span>New Visualisation</span></button>
 
             <div v-if="content.isActive">
                 <hr class="hr" />
@@ -54,6 +54,15 @@
                 <h2 class="title is-4">
                     Probability Thresholds: 
                 </h2>
+                <div class="optimise-container">
+                    <button v-if="!content.isOptimising" v-on:click="optimise" class="button is-info">
+                        <span class="icon"><i class="fas fa-cogs"></i></span><span>Optimise Thresholds</span>
+                    </button>
+
+                    <button v-if="content.isOptimising" class="button is-info" title="This may take a while..." disabled>
+                        <span class="icon"><i class="fas fa-cog fa-spin"></i></span><span>Optimising...</span>
+                    </button>
+                </div>
                 <div v-for="group in thresholdGroups" class="columns">
                     <div v-for="threshold in group" class="column is-one-third">
                         <slider v-on:change="onThresholdChange" v-model="threshold.value" :slider-label="threshold.name" :event-data="threshold.name"></slider>
@@ -298,7 +307,10 @@
                         </div>
                     </div>
                     <div class="modal-card-foot">
-                        <button v-on:click="upload" v-bind:class="{ 'is-loading': newModal.isLoading }" class="button is-success">Upload</button>
+                        <button v-on:click="upload" v-bind:class="{ 'is-loading': newModal.isLoading }" class="button is-success">
+                            <span class="icon"><i class="fas fa-upload"></i></span>
+                            <span>Upload</span>
+                        </button>
                         <button v-on:click="newModal.isActive = false" class="button is-danger">Cancel</button>
                     </div>
                 </div>

@@ -96,7 +96,7 @@ def optimise(df, inputs, ground_truth_path=None):
     new_thresholds = results.X[I].tolist()
 
     return {
-        "thesholds": new_thresholds
+        "thresholds": new_thresholds
     }
 
 def main():
