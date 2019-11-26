@@ -68,6 +68,9 @@ class UploadHandler(tornado.web.RequestHandler):
         os.makedirs(os.path.dirname(export_path), exist_ok=True)
         file_contents.to_csv(export_path)
 
+        # Remove any previous cookies
+        self.clear_all_cookies()
+
         # Set the filename to a cookie so it can be used in other requests
         self.set_cookie("id_label", id_label)
         self.set_cookie("ground_label", gt_label)
