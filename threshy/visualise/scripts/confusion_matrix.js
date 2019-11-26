@@ -1,15 +1,17 @@
 var margin = {top: 10, right: 50, bottom: 100, left: 100};
 function Matrix(options) {
-        var width = options.width,
-        height = options.height,
-        data = options.data,
-        container = options.container,
-        legend = options.legend,
-        labelsData = options.labels,
-        startColor = options.start_color,
-        endColor = options.end_color,
-        onChangeCallback = options.on_change_callback
-        isEditable = options.is_editable;
+    var width = options.width,
+    height = options.height,
+    data = options.data,
+    container = options.container,
+    legend = options.legend,
+    labelsData = options.labels,
+    startColor = options.start_color,
+    endColor = options.end_color,
+    onChangeCallback = options.on_change_callback,
+    horizontalAxis = options.horizontal_axis,
+    verticalAxis = options.vertical_axis,
+    isEditable = options.is_editable;
 
     var widthLegend = 100;
 
@@ -112,6 +114,23 @@ function Matrix(options) {
     var labels = svg.append('g')
         .attr('class', "labels");
 
+    labels.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -1.5 * y.rangeBand())
+        .attr("y", -80)
+        .attr("font-size", "1.1em")
+        .attr("font-weight", "bold")
+        .attr("text-anchor", "middle")
+        .text(verticalAxis);
+
+    labels.append("text")
+        .attr("x", 1.5 * x.rangeBand())
+        .attr("y", 3 * y.rangeBand() + 90)
+        .attr("text-anchor", "middle")
+        .attr("font-weight", "bold")
+        .attr("font-size", "1.1em")
+        .text(horizontalAxis);
+
     var columnLabels = labels.selectAll(".column-label")
         .data(labelsData)
         .enter().append("g")
@@ -136,7 +155,7 @@ function Matrix(options) {
 
     var rowLabels = labels.selectAll(".row-label")
         .data(labelsData)
-    .enter().append("g")
+        .enter().append("g")
         .attr("class", "row-label")
         .attr("transform", function(d, i) { return "translate(" + 0 + "," + y(i) + ")"; });
 
@@ -229,6 +248,8 @@ var confusionMatrixComp = {
                     start_color : '#ffffff',
                     end_color : '#0072ff',
                     is_editable: this.isEditable,
+                    vertical_axis: "Actual",
+                    horizontal_axis: "Predicted",
                     on_change_callback: this.onChange,
                     width: 400,
                     height: 400
@@ -267,6 +288,8 @@ var confusionMatrixComp = {
             start_color : '#ffffff',
             end_color : '#0072ff',
             is_editable: this.isEditable,
+            vertical_axis: "Actual",
+            horizontal_axis: "Predicted",
             on_change_callback: this.onChange,
             width: 400,
             height: 400

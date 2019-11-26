@@ -111,10 +111,6 @@
                             </div>
                         </div>
                         <confusion-matrix :report="matrices[content.selectedMatrixIndex]"></confusion-matrix>
-                        <div style="clear: both;">
-                            <p><strong>Vertical Axis:</strong> Actual</p>
-                            <p><strong>Horizontal Axis:</strong> Predicted</p>
-                        </div>
                     </div>
                     <div class="column" style="clear: both">
                         <h2 class="title is-4">Cost Estimation:</h2>
@@ -145,6 +141,7 @@
                         </div>
                         
                         <confusion-matrix is-editable name="cost-matrix" :report="content.costMatrix" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
+                        <hr class="hr" style="clear: both" />
 
                         <table class="table is-fullwidth" style="clear: both">
                             <tr>
