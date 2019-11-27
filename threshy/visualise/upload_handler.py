@@ -102,7 +102,7 @@ class UploadHandler(tornado.web.RequestHandler):
         self.set_cookie("labels", json.dumps(results['labels'], separators=(',', ':')))
 
         for label in results['labels']:
-            self.set_cookie(label + "_threshold", '0')
+            self.set_cookie(label + "_threshold", '0.51')
 
         self.set_status(200)
         self.write(results)

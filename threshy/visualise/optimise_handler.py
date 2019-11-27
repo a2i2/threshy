@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +20,18 @@ class OptimiseHandler(tornado.web.RequestHandler):
             min_value = self.get_cookie("min_value", 0)
             max_value = self.get_cookie("max_value", 1)
             sep = self.get_cookie("separator", ",")
+            cost_data = self.get_cookie("cost_matrix", {
+                "matrix": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                "portionSize": 1000,
+                "estimateSize": 10000
+            })
+
+            if cost_data == "":
+                cost_data = {
+                    "matrix": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    "portionSize": 1000,
+                    "estimateSize": 10000
+                }
 
             path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
 
@@ -38,7 +51,8 @@ class OptimiseHandler(tornado.web.RequestHandler):
                 "ground_truth_column": gt_label,
                 "reject_label": reject_label,
                 "min": int(min_value),
-                "max": int(max_value)
+                "max": int(max_value),
+                "cost": cost_data if isinstance(cost_data, dict) else json.loads(cost_data)
             }
 
             if prob_label:

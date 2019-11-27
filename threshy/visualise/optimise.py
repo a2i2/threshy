@@ -9,6 +9,7 @@ from pymoo.factory import *
 from pymoo.model.sampling import Sampling
 
 from .visualise_classifier import *
+from .cost import *
 
 class MyRepair(Repair):
 
@@ -19,13 +20,17 @@ class MyRepair(Repair):
         return pop
 
 class FindThresholds(Problem):
-    def __init__(self, probabilities, ground_truth, **kwargs):
+    def __init__(self, probabilities, ground_truth, cost_matrix, portion_size, estimate_size, **kwargs):
         self.probabilities = probabilities     
         self.ground_truth = ground_truth
+        self.cost_matrix = cost_matrix
+        self.portion_size = portion_size
+        self.estimate_size = estimate_size
+
         n_var = probabilities.shape[1]
         super().__init__(n_var=n_var, 
                          n_constr=0, 
-                         n_obj=4, 
+                         n_obj=8, 
                          xl=np.zeros((n_var,), dtype=np.int), 
                          xu=np.ones((n_var,), dtype=np.int),  
                          type_var=np.int, 
@@ -38,18 +43,28 @@ class FindThresholds(Problem):
         f3 = []
         thresholds = X 
         all_matrices, thresholded = get_objective(self.probabilities, self.ground_truth, thresholds, thresholds)
-        
-        # TODO: Trial optimisin        
-        # all_matrices = calculate_all_costs(all_matrices, params["cost"]["matrix"], params["cost"]["portion_size"], params["cost"]["estimate_size"])
-        
+
         true_matches, false_matches, missed_matches, rejects = summarise_results(all_matrices)
         
         f0.append(true_matches * -1)   # True matches need to be maximised, pymoo only minimises
         f1.append(false_matches)
         f2.append(missed_matches)
         f3.append(rejects)
-            
-        out["F"] = np.column_stack([f0, f1, f2, f3]).astype(np.double)
+
+        # Optimise using costs  
+        f4 = []
+        f5 = []
+        f6 = []
+        f7 = []    
+        all_matrices = calculate_all_costs(all_matrices, self.cost_matrix, self.portion_size, self.estimate_size)
+        true_matches, false_matches, missed_matches, rejects = summarise_results(all_matrices)
+
+        f4.append(true_matches)
+        f5.append(false_matches)
+        f6.append(missed_matches)
+        f7.append(rejects)
+
+        out["F"] = np.column_stack([f0, f1, f2, f3, f4, f5, f6, f7]).astype(np.double)
 
 class BetaDistribution(Sampling):
     def __init__(self):
@@ -81,7 +96,14 @@ def optimise(df, inputs, ground_truth_path=None):
     )    
 
     # Execute optimisation
-    problem = FindThresholds(np_probs, np_ground_truth, parallelizable=("threads", 4))
+    problem = FindThresholds(
+        np_probs,
+        np_ground_truth,
+        inputs["cost"]["matrix"],
+        inputs["cost"]["portionSize"],
+        inputs["cost"]["estimateSize"],
+        parallelizable=("threads", 4))
+
     results = minimize(problem,
                algorithm,
                ("n_gen", 10),
@@ -90,7 +112,7 @@ def optimise(df, inputs, ground_truth_path=None):
 
     # Generate the results
     F = results.F
-    weights = np.array([0.5,0.25,0.25,0])
+    weights = np.array([0.5,0.25,0.25,0,0.5,0.25,0.25,0])
     I = get_decomposition("weighted-sum").do(F, weights).argmin()
     
     new_thresholds = results.X[I].tolist()

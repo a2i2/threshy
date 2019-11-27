@@ -159,14 +159,17 @@ def get_results(df, inputs, ground_truth_path=None):
     if 'thresholds' in inputs:
         new_threshold = np.asarray(inputs['thresholds'], dtype=np.double)
     else:
-        new_threshold = np.full(len(labels), 0, dtype=np.double)
+        new_threshold = np.full(len(labels), 0.51, dtype=np.double)
     
     all_matrices, thresholded = get_objective(np_probs, np_ground_truth, new_threshold, new_threshold)
+    distribs = thresholded.sum(axis=0)
+
     results = summarise_results(all_matrices)
 
     return {
         "labels": labels,
         "matrices": all_matrices.tolist(),
+        "distributions": distribs.tolist(),
         "summary": results.tolist()
     }
 
