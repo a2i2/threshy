@@ -102,12 +102,14 @@ function checkForSession(app) {
 
 function fetchCostMatrix(app) {
     const request = new XMLHttpRequest();
+    const costIndex = app.content.selectedCostIndex;
+
     request.onreadystatechange = function() {
         if (request.readyState == 4) {
             if (request.status == 200) {
                 response = JSON.parse(request.response);
                 // Show new results
-                app.content.costResults = response;
+                app.content.costSessions[costIndex].results = response;
             }
 
             // Remove the request from the queue
@@ -120,9 +122,9 @@ function fetchCostMatrix(app) {
     request.setRequestHeader("Content-Type", "application/json");
     request.send(JSON.stringify({
         matrices: app.content.report.matrices,
-        costMatrix: app.content.costMatrix.matrix,
-        portionSize: parseInt(app.content.portionSize),
-        estimateSize: parseInt(app.content.estimateSize)
+        costMatrices: app.content.costSessions[costIndex].costMatrices.map(obj => obj.matrix),
+        portionSize: parseInt(app.content.costSessions[costIndex].portionSize),
+        estimateSize: parseInt(app.content.costSessions[costIndex].estimateSize)
     }));
 
     // Track this request in a list
@@ -145,6 +147,8 @@ function requestOptimisation(app) {
                             value: response.thresholds[i]
                         });
                     }
+
+                    app.writeLog("INFO", "Optimisation results: " + request.response);
 
                     // Refresh the report
                     checkForSession(app);
@@ -199,17 +203,23 @@ var app = new Vue({
                 summary: null,
                 distributions: null
             },
-            portionSize: 1000,
-            estimateSize: 10000,
-            costMatrix: {
-                matrix: null,
-                classes: null,
-                portionSize: 1000,
-                estimateSize: 10000
-            },
-            costResults: null,
+            costSessions: [
+                {
+                    name: "Financial",
+                    portionSize: 1000,
+                    estimateSize: 10000,
+                    costMatrices: [
+                        {
+                            matrix: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                            classes: null
+                        }
+                    ],
+                    results: null
+                }
+            ],
             thresholds: [],
             selectedMatrixIndex: 0,
+            selectedCostIndex: 0,
             selectedCostMatrixIndex: 0,
             costStrategies: ["Financial"],
             logs: [],
@@ -351,21 +361,34 @@ var app = new Vue({
                     } 
                 });
 
-                // Initialize the cost matrix from cookie or empty matrix
-                const costMatrixCookie = getCookie("cost_matrix");
-                if (costMatrixCookie !== "")
-                {
-                    this.content.costMatrix = JSON.parse(costMatrixCookie);
-                    this.content.portionSize = this.content.costMatrix.portionSize;
-                    this.content.estimateSize = this.content.costMatrix.estimateSize;
+                const costSessionsCookie = getCookie("cost_sessions");
+                if (costSessionsCookie !== "") {
+                    this.content.costSessions = JSON.parse(costSessionsCookie);
                 }
                 else {
-                    this.content.costMatrix = {
-                        matrix: populateNDimArray(createNDimArray([3, 3]), 0),
-                        classes: this.content.report.labels,
-                        portionSize: parseInt(this.content.portionSize),
-                        estimateSize: parseInt(this.content.estimateSize)
-                    };
+                    this.content.costSessions = [
+                        {
+                            name: "Financial",
+                            portionSize: 1000,
+                            estimateSize: 10000,
+                            costMatrices: this.content.report.labels.map(label => {
+                                return {
+                                    matrix: populateNDimArray(createNDimArray([3, 3]), 0),
+                                    classes: this.content.report.labels,
+                                }
+                            }),
+                            results: null
+                        }
+                    ];
+                    document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
+                }
+
+                const selectedCostIndexCookie = getCookie("selected_cost_index");
+                if (selectedCostIndexCookie !== "") {
+                    this.content.selectedCostIndex = parseInt(selectedCostIndexCookie);
+                }
+                else {
+                    document.cookie = "selected_cost_index=" + this.content.selectedCostIndex;
                 }
 
                 // Update the cost matrix if the report has changed
@@ -391,13 +414,18 @@ var app = new Vue({
     },
     methods: {
         onNewCostMatrix: function(matrix) {
-            this.content.costMatrix = {
+            const costMatrices = this.content.costSessions[this.content.selectedCostIndex].costMatrices;
+            costMatrices[this.content.selectedCostMatrixIndex] = {
                 matrix: matrix,
                 classes: this.content.report.labels,
-                portionSize: parseInt(this.content.portionSize),
-                estimateSize: parseInt(this.content.estimateSize)
-            };
-            document.cookie = "cost_matrix=" + JSON.stringify(this.content.costMatrix)
+            }
+
+            Vue.set(this.content.costSessions, this.content.selectedCostIndex, {
+                ...this.content.costSessions[this.content.selectedCostIndex],
+                costMatrices: costMatrices
+            });
+
+            document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
             this.writeLog("INFO", "Updated cost estimation matrix!");
 
             fetchCostMatrix(this);
@@ -411,19 +439,9 @@ var app = new Vue({
             this.writeLog("INFO", "Setting threshold '" + label + "' to " + value);
             checkForSession(this);
         },
-        onTargetLabelChange: function(event) {
-            const newIndex = this.content.report.labels.indexOf(event.target.value);
-            this.content.selectedMatrixIndex = newIndex;
-        },
         updateCost: function(event) {
-            this.content.costMatrix = {
-                matrix: this.content.costMatrix.matrix,
-                classes: this.content.report.labels,
-                portionSize: parseInt(this.content.portionSize),
-                estimateSize: parseInt(this.content.estimateSize)
-            };
+            document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
             this.writeLog("INFO", "Updated cost estimation settings!");
-            document.cookie = "cost_matrix=" + JSON.stringify(this.content.costMatrix)
             fetchCostMatrix(this);
         },
         optimise: function() {
@@ -435,10 +453,29 @@ var app = new Vue({
             });
         },
         addStrategy: function() {
-            if (this.newStrategyModal.name != "" && this.newStrategyModal.name != null)
-                this.content.costStrategies.push(this.newStrategyModal.name);
+            if (this.newStrategyModal.name != "" && this.newStrategyModal.name != null && this.content.costSessions.find(e => e.name === this.newStrategyModal.name) == null) {
+                this.content.costSessions.push({
+                    name: this.newStrategyModal.name,
+                    portionSize: 1000,
+                    estimateSize: 10000,
+                    costMatrices: this.content.report.labels.map(label => {
+                        return {
+                            matrix: populateNDimArray(createNDimArray([3, 3]), 0),
+                            classes: this.content.report.labels,
+                        }
+                    }),
+                    results: null
+                });
+
+                document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
+            }
             
             this.newStrategyModal.isActive = false;
+        },
+        onCostSessionChange: function(event) {
+            const newIndex = this.content.costSessions.findIndex(s => s.name == event.target.value);
+            this.content.selectedCostIndex = newIndex;
+            document.cookie = "selected_cost_index=" + newIndex;
         },
         writeLog: function (level, message) {
             const now = new Date().toISOString();

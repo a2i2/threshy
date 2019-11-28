@@ -10,10 +10,13 @@ class CostHandler(tornado.web.RequestHandler):
         inputs = json.loads(self.request.body)
 
         matrices = inputs["matrices"]
-        cost_matrix = inputs["costMatrix"]
+        cost_matrices = inputs["costMatrices"]
         portion_size = inputs["portionSize"]
         estimate_size = inputs["estimateSize"]
 
+        cost_matrices = np.asarray(cost_matrices)
+        cost_matrix = np.mean(cost_matrices, axis=0).tolist()
+    
         cost_results = calculate_all_costs(np.asarray(matrices), cost_matrix, portion_size, estimate_size)
         summary = summarise_results(cost_results)
 

@@ -127,12 +127,12 @@
                 
                 <div class="columns">
                     <div class="column is-one-fifth">
-                        <label class="label">Strategy:</label>
+                        <label class="label">Cost:</label>
                         <div class="field has-addons">
                             <div class="control is-expanded">
                                 <div class="select is-fullwidth">
-                                    <select>
-                                        <option v-for="option in content.costStrategies">{{ option }}</option>
+                                    <select v-on:change="onCostSessionChange">
+                                        <option v-for="(cost, index) in content.costSessions" :selected="index == content.selectedCostIndex">{{ cost.name }}</option>
                                     </select>
                                 </div>
                             </div>
@@ -141,6 +141,17 @@
                                     <span class="icon"><i class="fas fa-plus"></i></span>
                                     <span>New</span>
                                 </button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Strategy:</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select>
+                                        <option>Per label</option>
+                                        <option>Aggregation</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <aside class="menu">
@@ -158,19 +169,19 @@
                         <div class="field" style="clear: both">
                             <label class="label">Portion Size:</label>
                             <div class="control">
-                                <input v-model="content.portionSize" v-on:input="updateCost" class="input" type="number" />
+                                <input v-model="content.costSessions[content.selectedCostIndex].portionSize" v-on:input="updateCost" class="input" type="number" />
                             </div>
                         </div>
                         <div class="field">
                             <label class="label">Estimate Size:</label>
                             <div class="control">
-                                <input v-model="content.estimateSize" v-on:input="updateCost" class="input" type="number" />
+                                <input v-model="content.costSessions[content.selectedCostIndex].estimateSize" v-on:input="updateCost" class="input" type="number" />
                             </div>
                         </div>
                         
                         <div class="level">
                             <div class="level-item">
-                                <confusion-matrix is-editable name="cost-matrix" :report="content.costMatrix" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
+                                <confusion-matrix is-editable name="cost-matrix" :report="content.costSessions[content.selectedCostIndex].costMatrices[content.selectedCostMatrixIndex]" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
                             </div>
                         </div>
                         
@@ -179,15 +190,15 @@
                                 <table class="table" style="clear: both">
                                     <tr>
                                         <td><strong>Total True Positive Cost:</strong></td>
-                                        <td>{{ content.costResults != null ? ("$" + content.costResults.summary[0]) : "N/A" }}</td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[0]) : "N/A" }}</td>
                                         <td><strong>Total False Positive Cost:</strong></td>
-                                        <td>{{ content.costResults != null ? ("$" + content.costResults.summary[1]) : "N/A" }}</td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[1]) : "N/A" }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Total Missed Positive Cost:</strong></td>
-                                        <td>{{ content.costResults != null ? ("$" + content.costResults.summary[2]) : "N/A" }}</td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[2]) : "N/A" }}</td>
                                         <td><strong>Total Reject Cost:</strong></td>
-                                        <td>{{ content.costResults != null ? ("$" + content.costResults.summary[3]) : "N/A" }}</td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[3]) : "N/A" }}</td>
                                     </tr>
                                 </table>
                             </div>
@@ -459,8 +470,6 @@
                     </div>
                 </div>
             </div>
-            <hr class="hr" style="clear: both" />
-            <p>Alex Cummaudo & Scott Barnett</p>
         </div>
         </div>
 

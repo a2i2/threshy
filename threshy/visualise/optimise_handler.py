@@ -2,6 +2,7 @@ import os
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import tornado.web
 
@@ -23,17 +24,22 @@ class OptimiseHandler(tornado.web.RequestHandler):
             min_value = self.get_cookie("min_value", 0)
             max_value = self.get_cookie("max_value", 1)
             sep = self.get_cookie("separator", ",")
-            cost_data = self.get_cookie("cost_matrix", {
-                "matrix": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-                "portionSize": 1000,
-                "estimateSize": 10000
-            })
+            selected_cost_index = self.get_cookie("selected_cost_index", 0)
+            cost_sessions = self.get_cookie("cost_sessions", None)
 
             if cost_data == "":
                 cost_data = {
                     "matrix": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
                     "portionSize": 1000,
                     "estimateSize": 10000
+                }
+            else:
+                selected_cost_index = int(selected_cost_index)
+                cost_sessions = json.loads(cost_sessions)
+                cost_data = {
+                    "matrix": np.mean([m["matrix"] for m in cost_sessions[selected_cost_index]["costMatrices"]], axis=0),
+                    "portionSize": int(cost_sessions[selected_cost_index]["portionSize"]),
+                    "estimateSize": int(cost_sessions[selected_cost_index]["estimateSize"])
                 }
 
             path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
@@ -62,7 +68,7 @@ class OptimiseHandler(tornado.web.RequestHandler):
                 "reject_label": reject_label,
                 "min": int(min_value),
                 "max": int(max_value),
-                "cost": cost_data if isinstance(cost_data, dict) else json.loads(cost_data)
+                "cost": cost_data
             }
 
             if prob_label:
