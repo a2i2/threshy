@@ -194,6 +194,9 @@ var app = new Vue({
             isActive: false,
             name: null
         },
+        optimisationModal: {
+            isActive: false,
+        },
         content: {
             isActive: false,
             isOptimising: false,
@@ -448,6 +451,7 @@ var app = new Vue({
             this.writeLog("INFO", "Starting optimisation... this may take a while");
             requestOptimisation(this).then(() => {
                 app.content.isOptimising = false;
+                app.optimisationModal.isActive = true;
                 this.writeLog("INFO", "Optimisation complete!");
             });
         },

@@ -297,6 +297,62 @@
                 </div>
             </div>
 
+            <div v-if="optimisationModal.isActive" class="modal is-active">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <div class="modal-card-head">
+                        <div class="modal-card-title"><span class="icon" style="margin: 0.4em"><i class="fas fa-check-circle" style="color: green;"></i></span><span>Optimisation Complete!</span></div>
+                        <button v-on:click="optimisationModal.isActive = false" class="delete"></button>
+                    </div>
+                    <div class="modal-card-body">
+                        <p>Successfully optimised the thresholds to minimise cost and maximise true positives!</p>
+                        <hr class="hr" />
+                        <label class="label">Results:</label>
+                        <div style="max-height: 300px; overflow-y: auto">
+                            <table class="table is-hoverable">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Threshold</th>
+                                        <th>Distrubution</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="label in metadataObject.labels">
+                                        <td>{{ label.name }}</td>
+                                        <td>{{ label.threshold }}</td>
+                                        <td>{{ label.distribution }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <hr class="hr" />
+                            <table class="table is-hoverable is-fullwidth">
+                                <tr>
+                                    <td><strong>True Positives</strong></td>
+                                    <td>{{ content.report.summary[0] }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>False Positives</strong></td>
+                                    <td>{{ content.report.summary[1] }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Missed Positives</strong></td>
+                                    <td>{{ content.report.summary[2] }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rejects</strong></td>
+                                    <td>{{ content.report.summary[3] }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-card-foot">
+                        <button v-on:click="optimisationModal.isActive = false" class="button is-success">Dismiss</button>
+                        <a :href="metadataURI" download="export.json" class="button is-info"><span class="icon"><i class="fas fa-download"></i></span><span>Export JSON</span></a>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal" :class="{ 'is-active': newStrategyModal.isActive }">
                 <div class="modal-background"></div>
                 <div class="modal-card">
