@@ -5,7 +5,10 @@ from pathlib import Path
 
 import tornado.web
 import pandas as pd
+from surround.experiment.gcloud_storage_driver import GCloudStorageDriver
 from .visualise_classifier import get_results
+
+BUCKET_URI = os.environ["BUCKET_URI"] if "BUCKET_URI" in os.environ else None
 
 class UploadHandler(tornado.web.RequestHandler):
     def post(self):
@@ -98,6 +101,12 @@ class UploadHandler(tornado.web.RequestHandler):
             inputs["target_label"] = target_label
 
         results = get_results(file_contents, inputs, ground_truth_path=export_path + ".gt.npy")
+
+        # If a bucket is present, write storage to that
+        if BUCKET_URI:
+            driver = GCloudStorageDriver(BUCKET_URI)
+            driver.push(filename, local_path=export_path, override_ok=True)
+            driver.push(filename + ".gt.npy", local_path=export_path + ".gt.npy", override_ok=True)
 
         self.set_cookie("labels", json.dumps(results['labels'], separators=(',', ':')))
 

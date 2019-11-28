@@ -4,7 +4,10 @@ from pathlib import Path
 
 import tornado.web
 import pandas as pd
+from surround.experiment.gcloud_storage_driver import GCloudStorageDriver
 from .visualise_classifier import get_results
+
+BUCKET_URI = os.environ["BUCKET_URI"] if "BUCKET_URI" in os.environ else None
 
 class MetricsHandler(tornado.web.RequestHandler):
     def get(self):
@@ -31,6 +34,13 @@ class MetricsHandler(tornado.web.RequestHandler):
                     thresholds.append(float(thresh))
 
             path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
+
+            # If a bucket is present, pull from that instead
+            if BUCKET_URI and not os.path.exists(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                driver = GCloudStorageDriver(BUCKET_URI)
+                driver.pull(filename, local_path=path, override_ok=True)
+                driver.pull(filename + ".gt.npy", local_path=path + ".gt.npy", override_ok=True)
 
             if not os.path.exists(path):
                 print("Failed to find file in cookie!")

@@ -21,5 +21,8 @@ COPY . /app
 # Make port 8080 available to the world outside this container
 EXPOSE 8080
 
+# Setup credentials for google cloud
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+
 # List all tasks when the container launches
 CMD ["python3", "-m", "threshy"]

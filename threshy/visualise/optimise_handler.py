@@ -5,7 +5,10 @@ from pathlib import Path
 import pandas as pd
 import tornado.web
 
+from surround.experiment.gcloud_storage_driver import GCloudStorageDriver
 from .optimise import optimise
+
+BUCKET_URI = os.environ["BUCKET_URI"] if "BUCKET_URI" in os.environ else None
 
 class OptimiseHandler(tornado.web.RequestHandler):
     def get(self):
@@ -34,6 +37,13 @@ class OptimiseHandler(tornado.web.RequestHandler):
                 }
 
             path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
+
+            # If a bucket is present, pull from that instead
+            if BUCKET_URI and not os.path.exists(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                driver = GCloudStorageDriver(BUCKET_URI)
+                driver.pull(filename, local_path=path, override_ok=True)
+                driver.pull(filename + ".gt.npy", local_path=path + ".gt.npy", override_ok=True)
 
             if not os.path.exists(path):
                 self.clear_all_cookies()
