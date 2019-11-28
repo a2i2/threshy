@@ -221,7 +221,6 @@ var app = new Vue({
             selectedMatrixIndex: 0,
             selectedCostIndex: 0,
             selectedCostMatrixIndex: 0,
-            costStrategies: ["Financial"],
             logs: [],
             outputType: "formatted"
         },
