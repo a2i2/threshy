@@ -279,7 +279,6 @@ var app = new Vue({
         schema() {
             const schema = `
             {
-                "definitions": {},
                 "$schema": "http://json-schema.org/draft-07/schema#",
                 "$id": "optimise-output.json",
                 "type": "object",

@@ -297,7 +297,7 @@
                 </div>
             </div>
 
-            <div v-if="optimisationModal.isActive" class="modal is-active">
+            <div v-if="optimisationModal.isActive" class="modal" :class="{ 'is-active': optimisationModal.isActive }">
                 <div class="modal-background"></div>
                 <div class="modal-card">
                     <div class="modal-card-head">
