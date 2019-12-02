@@ -1,19 +1,34 @@
 import os
+import json
 from pathlib import Path
 
 import tornado.web
 import pandas as pd
-from .visualise_classifier import calculate_classifier_metrics
+from .visualise_classifier import get_results
 
 class MetricsHandler(tornado.web.RequestHandler):
     def get(self):
         filename = self.get_cookie("filename")
 
         if filename:
-            gt_label = self.get_cookie("ground_label", "ground-truth")
-            pred_label = self.get_cookie("predict_label", "predict")
-            prob_label = self.get_cookie("probability_label", "confidence")
+            id_label = self.get_cookie("id_label", "id")
+            gt_label = self.get_cookie("ground_label", "ground_truth")
+            reject_label = self.get_cookie("reject_label", "REJECT")
+            target_label = self.get_cookie("target_label", None)
+            prob_label = self.get_cookie("probability_label", None)
+            min_value = self.get_cookie("min_value", 0)
+            max_value = self.get_cookie("max_value", 1)
             sep = self.get_cookie("separator", ",")
+
+            labels = self.get_cookie("labels", "[]")
+            labels = json.loads(labels)
+
+            thresholds = []
+            for label in labels:
+                thresh = self.get_cookie(label + "_threshold", None)
+
+                if thresh:
+                    thresholds.append(float(thresh))
 
             path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
 
@@ -28,18 +43,27 @@ class MetricsHandler(tornado.web.RequestHandler):
             file_contents.columns = [i.strip() for i in file_contents.columns]
             file_contents.fillna(value="UNKNOWN", inplace=True)
 
-            if gt_label not in file_contents or pred_label not in file_contents:
+            if gt_label not in file_contents:
                 self.set_status(400)
                 return
 
-            y_true = file_contents[gt_label]
-            y_pred = file_contents[pred_label]
-            y_prob = file_contents[prob_label] if prob_label in file_contents else None
+            # Calculate matrices and return results
+            inputs = {
+                "id_column": id_label,
+                "ground_truth_column": gt_label,
+                "reject_label": reject_label,
+                "min": int(min_value),
+                "max": int(max_value),
+                "thresholds": thresholds
+            }
 
-            # Generate general metrics and return them
-            result = calculate_classifier_metrics(y_true, y_pred, y_prob)
+            if prob_label:
+                inputs["probability_column"] = prob_label
+
+            if target_label:
+                inputs["target_label"] = target_label
 
             self.set_status(200)
-            self.write(result)
+            self.write(get_results(file_contents, inputs, path + ".gt.npy"))
         else:
             self.set_status(404)

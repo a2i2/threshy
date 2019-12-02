@@ -13,168 +13,175 @@ TODO: Add a flag that describes each aspect of the generated report in human rea
 
 """
 
+import os
+import pandas as pd
 import numpy as np
+import scipy.stats as stats
+from sklearn.metrics import confusion_matrix
 
-def safe_div(a, b):
-    return a / b if b else 0
+def calculate_matches(x, lower, upper):
+    not_match = np.less(x, lower)
+    match = np.greater_equal(x, upper)
+    rejects = ~np.logical_xor(not_match, match)
+    return np.stack([not_match, match, rejects])
 
-def classification_report(y_true, y_pred, classes):
-    results = {}
+def apply_thresholds(probabilities, lower, upper):
+    temp = calculate_matches(probabilities, lower, upper)
+    def value(x):
+        return np.where(x == True)[0][0]
+    return np.apply_along_axis(value, 0, temp)
 
-    for name in classes:
-        tp = len([(yt, yp) for yt, yp in zip(y_true, y_pred) if yt == yp and yt == name])
-        fp = len([(yt, yp) for yt, yp in zip(y_true, y_pred) if yt != yp and yp == name])
-        fn = len([(yt, yp) for yt, yp in zip(y_true, y_pred) if yt != yp and yt == name])
+def calculate_confusion_matrices(gt, pred):
+    result = np.zeros((gt.shape[1],3,3), dtype=np.int)
+    for i,(x,y) in enumerate(zip(gt.T,pred.T)):
+        matrix = confusion_matrix(x,y)
+        if np.shape(matrix) < (3,3):
+            matrix = np.c_[matrix, np.zeros(2)]
+            matrix = np.r_[matrix, [np.zeros(3)]]
+        elif np.shape(matrix) > (3, 3):
+            raise ValueError("Matrix should be 3x3, error in input labels")
 
-        precision = safe_div(tp, (tp + fp))
-        recall = safe_div(tp, tp + fn)
-        f1_score = safe_div(2 * tp, 2 * tp + fp + fn)
-        support = len([p for p in y_true if p == name])
-        accuracy = safe_div(tp, fp + fn + tp)
+        # Column order: matches, not match, rejects
+        matrix[:,[0,1]] = matrix[:,[1, 0]]
+        # Row order: matches, not match, rejects 
+        matrix[[0,1], :] = matrix[[1, 0], :]
 
-        results[name] = {
-            "precision": precision,
-            "recall": recall,
-            "f1-score": f1_score,
-            "support": support,
-            "accuracy": accuracy
-        }
-
-    total_tp_plus_tn = len([(yt, yp) for yt, yp in zip(y_true, y_pred) if yt == yp])
-    results["accuracy"] = safe_div(total_tp_plus_tn, len(y_true))
-
-    results["macro avg"] = {
-        "precision": np.mean([results[name]["precision"] for name in classes]),
-        "recall": np.mean([results[name]["recall"] for name in classes]),
-        "f1-score": np.mean([results[name]["f1-score"] for name in classes]),
-        "support": len(y_true),
-    }
-
-    weights = [results[name]["support"] for name in classes]
-
-    results["weighted avg"] = {
-        "precision": np.average([results[name]["precision"] for name in classes], weights=weights),
-        "recall": np.average([results[name]["recall"] for name in classes], weights=weights),
-        "f1-score": np.average([results[name]["f1-score"] for name in classes], weights=weights),
-        "support": len(y_true),
-    }
-
-    return results
-
-def calculate_confusion_matrix(y_true, y_pred, classes):
-    result = np.empty([len(classes), len(classes)], dtype=np.int)
-    pairs = list(zip(y_true, y_pred))
-
-    for i, true_label in enumerate(classes):
-        for j, pred_label in enumerate(classes):
-            result[i][j] = pairs.count((true_label, pred_label))
-
+        result[i] = matrix
     return result
 
-def calculate_cohen_kappa(confusion_matrix):
-    n_classes = confusion_matrix.shape[0]
-    sum0 = np.sum(confusion_matrix, axis=0)
-    sum1 = np.sum(confusion_matrix, axis=1)
-    expected = safe_div(np.outer(sum0, sum1), np.sum(sum0))
-
-    w_mat = np.ones([n_classes, n_classes], dtype=np.int)
-
-    # pylint: disable=unsupported-assignment-operation
-    w_mat.flat[:: n_classes + 1] = 0
-
-    k = safe_div(np.sum(w_mat * confusion_matrix), np.sum(w_mat * expected))
-    return 1 - k
-
-def calculate_classifier_metrics(y_true, y_pred, y_prob):
-    """
-    Calculate the metrics used for the classifier visualiser.
-
-    :param y_true: ground truth values
-    :type y_true: iterable
-    :param y_pred: predicted values
-    :type y_pred: iterable
-    :param y_prop: probability values
-    :type y_prop: iterable
-    :return: report, confusion matrix, accuracy, cohen kappa, classes
-    :rtype: dict
-    """
-
-    classes = list(set(y_true).union(set(y_pred)))
-
-    # Ensure all values are strings
-    classes = [str(c) for c in classes]
-    y_true = [str(y) for y in y_true]
-    y_pred = [str(y) for y in y_pred]
-
-    report_dict = classification_report(y_true, y_pred, classes)
-    accuracy = report_dict["accuracy"]
-
-    # Generate a sorted class list and confusion matrix (sorted by popular class)
-    if isinstance(y_true, list):
-        y_true_list = y_true
+def normalise_probs_in_place(df, inputs, labels):
+    if inputs["min"] == 0 and inputs["max"] == 100:
+        for label in labels:
+            if label == inputs["reject_label"]:
+                continue
+            if (df[label] < 1).any() and (df[label] >= 0).any():
+                return 
+            df[label] = df[label] / 100      
+    elif inputs["min"] == 0 and inputs["max"] == 1:
+        # TODO: Check that the provided constraints are not violated 
+        return
     else:
-        y_true_list = y_true.tolist()
+        raise ValueError("Normalisation rule not specified")
 
-    classes = sorted(classes, key=y_true_list.count, reverse=True)
-    conf_matrix = calculate_confusion_matrix(y_true, y_pred, classes)
-    normal_conf_matrix = conf_matrix.astype('float') / conf_matrix.sum(axis=1)[:, np.newaxis]
-    normal_conf_matrix = np.nan_to_num(normal_conf_matrix)
+def derive_probabilities(df, inputs):
+    if "probability_column" in inputs:
+        probabilities = pd.DataFrame()
+        probabilities[inputs["target_label"]] = df[inputs["probability_column"]]
+        probabilities["id"] = df[inputs["id_column"]]
+    else:
+        labels = list(retrieve_labels(df, inputs))
+        labels.insert(0, inputs["id_column"])
+        probabilities = df[labels]
+        probabilities = probabilities.rename(columns={inputs["id_column"]: "id"})
+    return probabilities.drop_duplicates("id")
 
-    cohen_kappa = calculate_cohen_kappa(conf_matrix)
+def retrieve_labels(df, inputs):
+    return df[inputs["ground_truth_column"]].str.strip().sort_values().unique()
 
-    output = {
-        'report': report_dict,
-        'confusion_matrix': conf_matrix.tolist(),
-        'normalized_confusion_matrix': normal_conf_matrix.tolist(),
-        'accuracy_score': accuracy,
-        'cohen_kappa_score': cohen_kappa,
-        'classes': classes
+def check_labels_have_columns(df, labels):
+    return len(set(df.columns) & set(labels)) == len(labels)
+
+def prepare_labels(df, inputs):
+    labels = retrieve_labels(df, inputs)
+
+    if "target_label" in inputs:
+        labels = list(filter(lambda x: x == inputs["target_label"], labels))
+
+    if not check_labels_have_columns(df, labels) and not "probability_column" in inputs:
+        raise ValueError("Labels do not have column names for probabilities")   
+
+    return sorted(labels)
+
+def prepare_ground_truth(df, inputs, mapping):
+    ids = []
+    truth_columns = inputs["ground_truth_column"]
+
+    if not "target_label" in inputs:
+        all_labels = []
+        for a_id in df[inputs["id_column"]].unique():
+            ground_truth_labels = df[df[inputs["id_column"]] == a_id][truth_columns]
+            indexes = [mapping[s.strip()] for s in list(ground_truth_labels)]     
+            ground_truth = np.zeros(len(mapping), dtype=int)
+            ground_truth[indexes] = 1
+            ids.append(a_id)
+            all_labels.append(ground_truth)
+        columns = list(mapping.keys())
+        ground_truth = pd.DataFrame(all_labels)
+        ground_truth.columns = columns
+    else:
+        ids = df[inputs["id_column"]].unique()
+        ground_truth = pd.DataFrame()
+        ground_truth[inputs["target_label"]] = (df[truth_columns] == inputs["target_label"]) * 1
+    ground_truth["id"] = ids    
+    return ground_truth
+
+def get_objective(probabilities, ground_truth, lower_thresholds, upper_thresholds):
+    """
+    returns: (all confusion matrices, thresholds) 
+    """
+    thres = apply_thresholds(probabilities, lower_thresholds, upper_thresholds)  
+    all_results = calculate_confusion_matrices(ground_truth, thres)
+    return all_results, thres
+
+def summarise_results(all_results):
+    """
+    returns Summary array of true match, 
+    false match, missed match, and rejects, 
+    """
+    return np.array([all_results[:,0][:,0].sum(),
+            all_results[:,1][:,0].sum(),
+            all_results[:,0][:,1].sum(),
+            all_results[:,:,2].sum()])
+
+def get_results(df, inputs, ground_truth_path=None):
+    print(inputs)
+
+    labels = prepare_labels(df, inputs)
+
+    normalise_probs_in_place(df, inputs, labels)
+    probabilities = derive_probabilities(df, inputs)
+
+    mapping = {label: i for i, label in enumerate(labels)}
+
+    np_probs = probabilities[labels].to_numpy()
+
+    if ground_truth_path and not os.path.exists(ground_truth_path):
+        ground_truth = prepare_ground_truth(df, inputs, mapping)
+        np_ground_truth = ground_truth[labels].to_numpy()
+        np.save(ground_truth_path, np_ground_truth)
+    elif ground_truth_path:
+        np_ground_truth = np.load(ground_truth_path)
+    else:
+        ground_truth = prepare_ground_truth(df, inputs, mapping)
+        np_ground_truth = ground_truth[labels].to_numpy()
+
+    if 'thresholds' in inputs:
+        new_threshold = np.asarray(inputs['thresholds'], dtype=np.double)
+    else:
+        new_threshold = np.full(len(labels), 0, dtype=np.double)
+    
+    all_matrices, thresholded = get_objective(np_probs, np_ground_truth, new_threshold, new_threshold)
+    results = summarise_results(all_matrices)
+
+    return {
+        "labels": labels,
+        "matrices": all_matrices.tolist(),
+        "summary": results.tolist()
     }
 
-    return round_dict(output, 4)
+if __name__ == "__main__":
+    # df = pd.read_csv("../../input/mailguard-labeled-results.csv")
+    df = pd.read_csv("../../input/predictions-email-classifier-percept_20191014-161825.csv")
 
-def round_dict(data, n_digits):
-    """
-    Recursively round all floats in a dictionary to n digits.
+    inputs = {
+        "id_column": "email_id",
+        "ground_truth_column": "work_type",
+        "reject_label": "REJECT",
+        "min": 0,
+        "max": 100,
+        
+        # "probability_column" : "probabilities",  # Optional???
+        # "target_label" : "spam",                 # Optional???
+    }
 
-    :param data: the dictionary
-    :type data: dict
-    :param n_digits: amount of digits to round to
-    :type n_digits: int
-    :return: the dictionary with values rounded
-    :rtype: dict
-    """
-
-    result = data.copy()
-
-    for key, value in data.items():
-        if isinstance(value, float):
-            result[key] = round(value, n_digits)
-        elif isinstance(value, dict):
-            result[key] = round_dict(value, n_digits)
-        elif isinstance(value, list):
-            result[key] = round_list(value, n_digits)
-
-    return result
-
-def round_list(data, n_digits):
-    """
-    Recursively round all floats in a list to n digits.
-
-    :param data: the list to round
-    :type data: list
-    :param n_digits: amount of digits to round to
-    :type n_digits: int
-    :return: the list with values rounded
-    :rtype: list
-    """
-
-    result = data.copy()
-
-    for i, value in enumerate(data):
-        if isinstance(value, float):
-            result[i] = round(value, n_digits)
-        elif isinstance(value, list):
-            result[i] = round_list(value, n_digits)
-
-    return result
+    print(get_results(df, inputs))

@@ -224,8 +224,8 @@ var confusionMatrixComp = {
                 Matrix({
                     container : '#' + this.containerName,
                     legend    : '#' + this.legendName,
-                    data      : this.report.confusion_matrix,
-                    labels    : this.report.classes,
+                    data      : this.report.matrix,
+                    labels    : ["Positive", "Negative", "REJECT"],
                     start_color : '#ffffff',
                     end_color : '#0072ff',
                     is_editable: this.isEditable,
@@ -240,7 +240,7 @@ var confusionMatrixComp = {
     methods: {
         onChange(index, element) {
             const newValue = Number.parseInt(element.value);
-            const matrix = this.report.confusion_matrix;
+            const matrix = this.report.matrix;
             const numCols = matrix[0].length;
             
             const y = Math.floor(index / numCols);
@@ -262,8 +262,8 @@ var confusionMatrixComp = {
         Matrix({
             container : '#' + this.containerName,
             legend    : '#' + this.legendName,
-            data      : this.report.confusion_matrix,
-            labels    : this.report.classes,
+            data      : this.report.matrix,
+            labels    : ["Positive", "Negative", "REJECT"],
             start_color : '#ffffff',
             end_color : '#0072ff',
             is_editable: this.isEditable,
