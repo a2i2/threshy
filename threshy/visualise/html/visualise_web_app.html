@@ -46,23 +46,13 @@
             <h1 class="title">Classification Visualiser
                 <span v-if="isLoading" class="icon" style="margin-left: 10px"><i class="fas fa-sync fa-spin"></i></span>
             </h1>
-            <button v-on:click="newModal.isActive = true" class="button is-success">New Visualisation</button>
+            <button v-on:click="newModal.isActive = true" class="button is-success"><span class="icon"><i class="fas fa-plus"></i></span><span>New Threshold Estimation</span></button>
 
             <div v-if="content.isActive">
                 <hr class="hr" />
 
-                <h2 class="title is-4">
-                    Probability Thresholds: 
-                </h2>
-                <div v-for="group in thresholdGroups" class="columns">
-                    <div v-for="threshold in group" class="column is-one-third">
-                        <slider v-on:change="onThresholdChange" v-model="threshold.value" :slider-label="threshold.name" :event-data="threshold.name"></slider>
-                    </div>
-                </div>
-                <hr class="hr" />
-
-                <h2 class="title is-4">Summary:</h2>
-                <table class="table is-fullwidth is-hoverable">
+                <h2 class="title is-4">Overview:</h2>
+                <table class="table is-hoverable">
                     <tr>
                         <td><strong>True Positives</strong></td>
                         <td>{{ content.report.summary[0] }}</td>
@@ -82,75 +72,305 @@
                 </table>
                 <hr class="hr" />
 
+                <h2 class="title is-4">Confusion Matrix:</h2>
+
                 <div class="columns">
+                    <div class="column is-one-fifth">
+                        <aside class="menu">
+                            <label class="label">Show Label:</label>
+                            <ul class="menu-list">
+                                <li v-for="(label, index) in content.report.labels">
+                                    <a :title="label" v-on:click="content.selectedMatrixIndex = index" v-bind:class="{ 'is-active': index == content.selectedMatrixIndex }">
+                                        {{ label }}
+                                    </a>
+                                </li>
+                            </ul>
+                        </aside>
+                    </div>
                     <div class="column">
-                        <h2 class="title is-4">Confusion Matrix:</h2>
-                        <div class="field is-horizontal">
-                            <div class="field-label">
-                                <label class="label">Target Label:</label>
+                        <div class="level">
+                            <div class="level-item">
+                                <confusion-matrix :report="matrices[content.selectedMatrixIndex]"></confusion-matrix>
                             </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <div class="control is-expanded">
-                                        <div class="select is-fullwidth">
-                                            <select v-on:change="onTargetLabelChange">
-                                                <option v-for="(label, index) in content.report.labels" v-bind:selected="index == content.selectedMatrixIndex">{{ label }}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <confusion-matrix :report="matrices[content.selectedMatrixIndex]"></confusion-matrix>
-                        <div style="clear: both;">
-                            <p><strong>Vertical Axis:</strong> Actual</p>
-                            <p><strong>Horizontal Axis:</strong> Predicted</p>
                         </div>
                     </div>
-                    <div class="column" style="clear: both">
-                        <h2 class="title is-4">Cost Estimation:</h2>
+                </div>
 
-                        <div class="field is-horizontal" style="clear: both">
-                            <div class="field-label">
-                                <label class="label">Portion Size:</label>
+                <hr class="hr" style="clear: both" />
+
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-4">Cost Estimation: </h2>
+                    </div>
+                    <div class="level-right">
+                        <div class="field has-addons">
+                            <div class="control">
+                                <div class="select">
+                                    <select>
+                                        <option>Genetic Algorithm</option>
+                                        <option>Bayesian Optimisation</option>
+                                    </select>
+                                </div>                                
                             </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <div class="control">
-                                        <input v-model="content.portionSize" v-on:input="updateCost" class="input" type="number" />
-                                    </div>
+                            <div class="control">
+                                <button v-if="!content.isOptimising" v-on:click="optimise" class="button is-info">
+                                    <span class="icon"><i class="fas fa-cogs"></i></span><span>Optimise</span>
+                                </button>
+            
+                                <button v-if="content.isOptimising" class="button is-info" title="This may take a while..." disabled>
+                                    <span class="icon"><i class="fas fa-cog fa-spin"></i></span><span>Optimising...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="columns">
+                    <div class="column is-one-fifth">
+                        <label class="label">Cost:</label>
+                        <div class="field has-addons">
+                            <div class="control is-expanded">
+                                <div class="select is-fullwidth">
+                                    <select v-on:change="onCostSessionChange">
+                                        <option v-for="(cost, index) in content.costSessions" :selected="index == content.selectedCostIndex">{{ cost.name }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="control">
+                                <button v-on:click="newStrategyModal.isActive = true" class="button is-primary">
+                                    <span class="icon"><i class="fas fa-plus"></i></span>
+                                    <span>New</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Strategy:</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select>
+                                        <option>Per label</option>
+                                        <option>Aggregation</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        <div class="field is-horizontal">
-                            <div class="field-label">
-                                <label class="label">Estimate Size:</label>
+                        <aside class="menu">
+                            <label class="label">Show Label:</label>
+                            <ul class="menu-list">
+                                <li v-for="(label, index) in content.report.labels">
+                                    <a :title="label" v-on:click="content.selectedCostMatrixIndex = index" v-bind:class="{ 'is-active': index == content.selectedCostMatrixIndex }">
+                                        {{ label }}
+                                    </a>
+                                </li>
+                            </ul>
+                        </aside>
+                    </div>
+                    <div class="column">
+                        <div class="field" style="clear: both">
+                            <label class="label">Portion Size:</label>
+                            <div class="control">
+                                <input v-model="content.costSessions[content.selectedCostIndex].portionSize" v-on:input="updateCost" class="input" type="number" />
                             </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <div class="control">
-                                        <input v-model="content.estimateSize" v-on:input="updateCost" class="input" type="number" />
-                                    </div>
-                                </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Estimate Size:</label>
+                            <div class="control">
+                                <input v-model="content.costSessions[content.selectedCostIndex].estimateSize" v-on:input="updateCost" class="input" type="number" />
                             </div>
                         </div>
                         
-                        <confusion-matrix is-editable name="cost-matrix" :report="content.costMatrix" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
+                        <div class="level">
+                            <div class="level-item">
+                                <confusion-matrix is-editable name="cost-matrix" :report="content.costSessions[content.selectedCostIndex].costMatrices[content.selectedCostMatrixIndex]" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
+                            </div>
+                        </div>
+                        
+                        <div class="level">
+                            <div class="level-item">
+                                <table class="table" style="clear: both">
+                                    <tr>
+                                        <td><strong>Total True Positive Cost:</strong></td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[0]) : "N/A" }}</td>
+                                        <td><strong>Total False Positive Cost:</strong></td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[1]) : "N/A" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Missed Positive Cost:</strong></td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[2]) : "N/A" }}</td>
+                                        <td><strong>Total Reject Cost:</strong></td>
+                                        <td>{{ content.costSessions[content.selectedCostIndex].results != null ? ("$" + content.costSessions[content.selectedCostIndex].results.summary[3]) : "N/A" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                        <table class="table is-fullwidth" style="clear: both">
+                <hr class="hr" />
+
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-4">Probability Thresholds: </h2>
+                    </div>
+                    <div class="level-right">
+                        <div class="field has-addons">
+                            <div class="control">
+                                <div class="select">
+                                    <select>
+                                        <option>Genetic Algorithm</option>
+                                        <option>Bayesian Optimisation</option>
+                                    </select>
+                                </div>                                
+                            </div>
+                            <div class="control">
+                                <button v-if="!content.isOptimising" v-on:click="optimise" class="button is-info">
+                                    <span class="icon"><i class="fas fa-cogs"></i></span><span>Optimise</span>
+                                </button>
+            
+                                <button v-if="content.isOptimising" class="button is-info" title="This may take a while..." disabled>
+                                    <span class="icon"><i class="fas fa-cog fa-spin"></i></span><span>Optimising...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div v-for="group in thresholdGroups" class="columns">
+                    <div v-for="threshold in group" class="column is-one-third">
+                        <slider v-on:change="onThresholdChange" v-model="threshold.value" :slider-label="threshold.name" :event-data="threshold.name"></slider>
+                    </div>
+                </div>
+
+                <hr class="hr" />
+
+                <h2 class="title is-4">Log Output:</h2>
+                <div id="log-output" class="log-output">
+                    <span class="log" v-for="log in content.logs">{{ log }}</span>
+                </div>
+                <hr class="hr" />
+
+                <h2 class="title is-4">Optimisation Output:</h2>
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <div class="tabs">
+                                <ul>
+                                    <li :class="{ 'is-active': content.outputType == 'formatted' }"><a v-on:click="content.outputType = 'formatted'">Formatted</a></li>
+                                    <li :class="{ 'is-active': content.outputType == 'json' }"><a v-on:click="content.outputType = 'json'">JSON</a></li>
+                                    <li :class="{ 'is-active': content.outputType == 'schema' }"><a v-on:click="content.outputType = 'schema'">Schema</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <a :href="metadataURI" download="export.json" class="button is-info">
+                                <span class="icon"><i class="fas fa-download"></i></span>
+                                <span>Export JSON</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="content.outputType == 'formatted'">
+                    <table class="table is-hoverable">
+                        <thead>
                             <tr>
-                                <td><strong>Total True Positive Cost:</strong></td>
-                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[0]) : "N/A" }}</td>
-                                <td><strong>Total False Positive Cost:</strong></td>
-                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[1]) : "N/A" }}</td>
+                                <th>Label</th>
+                                <th>Threshold</th>
+                                <th>Distrubution</th>
                             </tr>
-                            <tr>
-                                <td><strong>Total Missed Positive Cost:</strong></td>
-                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[2]) : "N/A" }}</td>
-                                <td><strong>Total Reject Cost:</strong></td>
-                                <td>{{ content.costResults != null ? ("$" + content.costResults.summary[3]) : "N/A" }}</td>
+                        </thead>
+                        <tbody>
+                            <tr v-for="label in metadataObject.labels">
+                                <td>{{ label.name }}</td>
+                                <td>{{ label.threshold }}</td>
+                                <td>{{ label.distribution }}</td>
                             </tr>
-                        </table>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else-if="content.outputType == 'json'">
+                    <code>{{ metadata }}</code>
+                </div>
+                <div v-else>
+                    <code>{{ schema }}</code>
+                </div>
+            </div>
+
+            <div v-if="optimisationModal.isActive" class="modal" :class="{ 'is-active': optimisationModal.isActive }">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <div class="modal-card-head">
+                        <div class="modal-card-title"><span class="icon" style="margin: 0.4em"><i class="fas fa-check-circle" style="color: green;"></i></span><span>Optimisation Complete!</span></div>
+                        <button v-on:click="optimisationModal.isActive = false" class="delete"></button>
+                    </div>
+                    <div class="modal-card-body">
+                        <p>Successfully optimised the thresholds to minimise cost and maximise true positives!</p>
+                        <hr class="hr" />
+                        <label class="label">Results:</label>
+                        <div style="max-height: 300px; overflow-y: auto">
+                            <table class="table is-hoverable">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Threshold</th>
+                                        <th>Distrubution</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="label in metadataObject.labels">
+                                        <td>{{ label.name }}</td>
+                                        <td>{{ label.threshold }}</td>
+                                        <td>{{ label.distribution }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <hr class="hr" />
+                            <table class="table is-hoverable is-fullwidth">
+                                <tr>
+                                    <td><strong>True Positives</strong></td>
+                                    <td>{{ content.report.summary[0] }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>False Positives</strong></td>
+                                    <td>{{ content.report.summary[1] }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Missed Positives</strong></td>
+                                    <td>{{ content.report.summary[2] }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rejects</strong></td>
+                                    <td>{{ content.report.summary[3] }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-card-foot">
+                        <button v-on:click="optimisationModal.isActive = false" class="button is-success">Dismiss</button>
+                        <a :href="metadataURI" download="export.json" class="button is-info"><span class="icon"><i class="fas fa-download"></i></span><span>Export JSON</span></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal" :class="{ 'is-active': newStrategyModal.isActive }">
+                <div class="modal-background"></div>
+                <div class="modal-card">
+                    <div class="modal-card-head">
+                        <div class="modal-card-title">New Strategy</div>
+                        <button v-on:click="newStrategyModal.isActive = false" class="delete"></button>
+                    </div>
+                    <div class="modal-card-body">
+                        <div class="field">
+                            <label class="label">Strategy Name:</label>
+                            <div class="control">
+                                <input v-model="newStrategyModal.name" class="input" type="text" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-card-foot">
+                        <button v-on:click="addStrategy" class="button is-success">Add</button>
+                        <button v-on:click="newStrategyModal.isActive = false" class="button">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -298,13 +518,14 @@
                         </div>
                     </div>
                     <div class="modal-card-foot">
-                        <button v-on:click="upload" v-bind:class="{ 'is-loading': newModal.isLoading }" class="button is-success">Upload</button>
+                        <button v-on:click="upload" v-bind:class="{ 'is-loading': newModal.isLoading }" class="button is-success">
+                            <span class="icon"><i class="fas fa-cogs"></i></span>
+                            <span>Process</span>
+                        </button>
                         <button v-on:click="newModal.isActive = false" class="button is-danger">Cancel</button>
                     </div>
                 </div>
             </div>
-            <hr class="hr" style="clear: both" />
-            <p>Alex Cummaudo & Scott Barnett</p>
         </div>
         </div>
 

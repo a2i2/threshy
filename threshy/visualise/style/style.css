@@ -27,3 +27,35 @@
     background: #4CAF50;
     cursor: pointer;
 }
+
+/* Allow new lines in the code block */
+code {
+    display: block;
+    white-space: pre-wrap;
+}
+
+/* Ensure large label names don't overflow the list */
+aside ul li {
+    overflow: hidden;
+}
+
+/* Make the label list more visible */
+aside ul {
+    background-color: rgb(251, 251, 251)
+}
+
+.log-output {
+    width: 100%;
+    height: 300px;
+    background-color: rgb(251, 251, 251);
+    padding: 10px 20px 10px 20px;
+    font-family: monospace;
+    overflow-y: scroll;
+    overflow-wrap: break-word;
+    border: 1px solid rgb(230, 230, 230)
+}
+
+.log-output .log {
+    display: block;
+    margin: 0;
+}

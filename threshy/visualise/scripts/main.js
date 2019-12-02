@@ -76,11 +76,16 @@ function uploadCSV(file, inputs) {
 function checkForSession(app) {
     const request = new XMLHttpRequest();
     request.onreadystatechange = function() {
-        if (request.readyState == 4 && request.status == 200) {
-            response = JSON.parse(request.response);
-            // Show metrics, etc.
-            app.content.isActive = true;
-            app.content.report = response;
+        if (request.readyState == 4) {
+            if (request.status == 200) {
+                response = JSON.parse(request.response);
+                // Show metrics, etc.
+                app.content.isActive = true;
+                app.content.report = response;
+                app.writeLog("INFO", "Received matrices & summaries!")
+            }
+            else
+                app.writeLog("WARNING", "No matrices & summaries found for current session!");
 
             // Remove the request from the queue
             app.currentRequests.splice(app.currentRequests.indexOf(request), 1);
@@ -92,18 +97,24 @@ function checkForSession(app) {
 
     // Track this request in a list
     app.currentRequests.push(request);
+    app.writeLog("INFO", "Loading matrices & summaries for current session...");
 }
 
 function fetchCostMatrix(app) {
     const request = new XMLHttpRequest();
+    const costIndex = app.content.selectedCostIndex;
+
     request.onreadystatechange = function() {
-        if (request.readyState == 4 && request.status == 200) {
-            response = JSON.parse(request.response);
-            // Show new results
-            app.content.costResults = response;
+        if (request.readyState == 4) {
+            if (request.status == 200) {
+                response = JSON.parse(request.response);
+                // Show new results
+                app.content.costSessions[costIndex].results = response;
+            }
 
             // Remove the request from the queue
             app.currentRequests.splice(app.currentRequests.indexOf(request), 1);
+            app.writeLog("INFO", "Received new cost summary from server!");
         }
     }
 
@@ -111,13 +122,50 @@ function fetchCostMatrix(app) {
     request.setRequestHeader("Content-Type", "application/json");
     request.send(JSON.stringify({
         matrices: app.content.report.matrices,
-        costMatrix: app.content.costMatrix.matrix,
-        portionSize: parseInt(app.content.portionSize),
-        estimateSize: parseInt(app.content.estimateSize)
+        costMatrices: app.content.costSessions[costIndex].costMatrices.map(obj => obj.matrix),
+        portionSize: parseInt(app.content.costSessions[costIndex].portionSize),
+        estimateSize: parseInt(app.content.costSessions[costIndex].estimateSize)
     }));
 
     // Track this request in a list
     app.currentRequests.push(request);
+    app.writeLog("INFO", "Requesting new cost summary from server..")
+}
+
+function requestOptimisation(app) {
+    return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if (request.readyState == 4) {
+                if (request.status == 200) {
+                    response = JSON.parse(request.response);
+
+                    // Set thresholds to new optimised ones
+                    for (var i = 0; i < app.content.thresholds.length; i++) {
+                        Vue.set(app.content.thresholds, i, {
+                            name: app.content.thresholds[i].name,
+                            value: response.thresholds[i]
+                        });
+                    }
+
+                    app.writeLog("INFO", "Optimisation results: " + request.response);
+
+                    // Refresh the report
+                    checkForSession(app);
+                }
+    
+                // Remove the request from the queue
+                app.currentRequests.splice(app.currentRequests.indexOf(request), 1);
+                resolve();
+            }
+        }
+    
+        request.open("GET", "./optimise", true);
+        request.send();
+    
+        // Track this request in a list
+        app.currentRequests.push(request);
+    });
 }
 
 function checkValue(val, def) {
@@ -142,22 +190,42 @@ var app = new Vue({
             hasError: false,
             errorMessage: ""
         },
+        newStrategyModal: {
+            isActive: false,
+            name: null
+        },
+        optimisationModal: {
+            isActive: false,
+        },
         content: {
             isActive: false,
+            isOptimising: false,
             report: {
                 labels: null,
                 matrices: null,
-                summary: null
+                summary: null,
+                distributions: null
             },
-            portionSize: 1000,
-            estimateSize: 10000,
-            costMatrix: {
-                matrix: null,
-                classes: null,
-            },
-            costResults: null,
+            costSessions: [
+                {
+                    name: "Financial",
+                    portionSize: 1000,
+                    estimateSize: 10000,
+                    costMatrices: [
+                        {
+                            matrix: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                            classes: null
+                        }
+                    ],
+                    results: null
+                }
+            ],
             thresholds: [],
-            selectedMatrixIndex: 0
+            selectedMatrixIndex: 0,
+            selectedCostIndex: 0,
+            selectedCostMatrixIndex: 0,
+            logs: [],
+            outputType: "formatted"
         },
         currentRequests: []
     },
@@ -188,6 +256,98 @@ var app = new Vue({
         },
         isLoading() {
             return this.currentRequests.length > 0; 
+        },
+        metadata() {
+            return JSON.stringify(this.metadataObject, null, 2);
+        },
+        metadataObject() {
+            const content = this.content;
+            return {
+                filename: getCookie("filename"),
+                labels: this.content.report.labels.map((label, index) => {
+                    return {
+                        name: label,
+                        threshold: parseFloat(content.thresholds[index].value),
+                        distribution: content.report.distributions[index]
+                    }
+                })
+            };
+        },
+        metadataURI() {
+            return 'data:text/plain;charset=utf-8,' + encodeURIComponent(this.metadata);
+        },
+        schema() {
+            const schema = `
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "$id": "optimise-output.json",
+                "type": "object",
+                "title": "The Root Schema",
+                "required": [
+                    "filename",
+                    "labels"
+                ],
+                "properties": {
+                    "filename": {
+                        "$id": "#/properties/filename",
+                        "type": "string",
+                        "title": "The Filename Schema",
+                        "default": "",
+                        "examples": [
+                            "predictions-email-classifier.csv"
+                        ],
+                        "pattern": "^(.*)$"
+                    },
+                    "labels": {
+                        "$id": "#/properties/labels",
+                        "type": "array",
+                        "title": "The Labels Schema",
+                        "items": {
+                            "$id": "#/properties/labels/items",
+                            "type": "object",
+                            "title": "The Items Schema",
+                            "required": [
+                                "name",
+                                "threshold",
+                                "distribution"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "$id": "#/properties/labels/items/properties/name",
+                                    "type": "string",
+                                    "title": "The name of the label",
+                                    "default": "",
+                                    "examples": ["add_funds"],
+                                    "pattern": "^(.*)$"
+                                },
+                                "threshold": {
+                                    "$id": "#/properties/labels/items/properties/threshold",
+                                    "type": "number",
+                                    "title": "The threshold set for this label",
+                                    "default": 0.0,
+                                    "examples": [0.82]
+                                },
+                                "distribution": {
+                                    "$id": "#/properties/labels/items/properties/distribution",
+                                    "type": "integer",
+                                    "title": "The distribution of the label",
+                                    "default": 0,
+                                    "examples": [0]
+                                }
+                            }
+                        }
+                    }
+                }
+            }`;
+
+            // Remove first 12 chars from each line (just spaces)
+            var lines = schema.split("\n");
+            lines.splice(0, 1);
+            lines = lines.map(line => line.substr(12, line.length - 12));
+            var formatted = "";
+            lines.forEach(line => formatted += line + "\n");
+
+            return formatted;
         }
     },
     watch: {
@@ -198,21 +358,38 @@ var app = new Vue({
                     var v = getCookie(label + "_threshold")
                     return { 
                         name: label, 
-                        value: v === "" ? 0 : v
+                        value: v === "" ? 0.51 : v
                     } 
                 });
 
-                // Initialize the cost matrix from cookie or empty matrix
-                const costMatrixCookie = getCookie("cost_matrix");
-                if (costMatrixCookie !== "")
-                {
-                    this.content.costMatrix = JSON.parse(costMatrixCookie);
+                const costSessionsCookie = getCookie("cost_sessions");
+                if (costSessionsCookie !== "") {
+                    this.content.costSessions = JSON.parse(costSessionsCookie);
                 }
                 else {
-                    this.content.costMatrix = {
-                        matrix: populateNDimArray(createNDimArray([3, 3]), 0),
-                        classes: this.content.report.labels
-                    };
+                    this.content.costSessions = [
+                        {
+                            name: "Financial",
+                            portionSize: 1000,
+                            estimateSize: 10000,
+                            costMatrices: this.content.report.labels.map(label => {
+                                return {
+                                    matrix: populateNDimArray(createNDimArray([3, 3]), 0),
+                                    classes: this.content.report.labels,
+                                }
+                            }),
+                            results: null
+                        }
+                    ];
+                    document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
+                }
+
+                const selectedCostIndexCookie = getCookie("selected_cost_index");
+                if (selectedCostIndexCookie !== "") {
+                    this.content.selectedCostIndex = parseInt(selectedCostIndexCookie);
+                }
+                else {
+                    document.cookie = "selected_cost_index=" + this.content.selectedCostIndex;
                 }
 
                 // Update the cost matrix if the report has changed
@@ -238,11 +415,19 @@ var app = new Vue({
     },
     methods: {
         onNewCostMatrix: function(matrix) {
-            this.content.costMatrix = {
+            const costMatrices = this.content.costSessions[this.content.selectedCostIndex].costMatrices;
+            costMatrices[this.content.selectedCostMatrixIndex] = {
                 matrix: matrix,
-                classes: this.content.report.labels
-            };
-            document.cookie = "cost_matrix=" + JSON.stringify(this.content.costMatrix)
+                classes: this.content.report.labels,
+            }
+
+            Vue.set(this.content.costSessions, this.content.selectedCostIndex, {
+                ...this.content.costSessions[this.content.selectedCostIndex],
+                costMatrices: costMatrices
+            });
+
+            document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
+            this.writeLog("INFO", "Updated cost estimation matrix!");
 
             fetchCostMatrix(this);
         },
@@ -252,14 +437,56 @@ var app = new Vue({
         },
         onThresholdChange: function(value, label) {
             document.cookie = label + "_threshold=" + value;
+            this.writeLog("INFO", "Setting threshold '" + label + "' to " + value);
             checkForSession(this);
         },
-        onTargetLabelChange: function(event) {
-            const newIndex = this.content.report.labels.indexOf(event.target.value);
-            this.content.selectedMatrixIndex = newIndex;
-        },
         updateCost: function(event) {
+            document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
+            this.writeLog("INFO", "Updated cost estimation settings!");
             fetchCostMatrix(this);
+        },
+        optimise: function() {
+            this.content.isOptimising = true;
+            this.writeLog("INFO", "Starting optimisation... this may take a while");
+            requestOptimisation(this).then(() => {
+                app.content.isOptimising = false;
+                app.optimisationModal.isActive = true;
+                this.writeLog("INFO", "Optimisation complete!");
+            });
+        },
+        addStrategy: function() {
+            if (this.newStrategyModal.name != "" && this.newStrategyModal.name != null && this.content.costSessions.find(e => e.name === this.newStrategyModal.name) == null) {
+                this.content.costSessions.push({
+                    name: this.newStrategyModal.name,
+                    portionSize: 1000,
+                    estimateSize: 10000,
+                    costMatrices: this.content.report.labels.map(label => {
+                        return {
+                            matrix: populateNDimArray(createNDimArray([3, 3]), 0),
+                            classes: this.content.report.labels,
+                        }
+                    }),
+                    results: null
+                });
+
+                document.cookie = "cost_sessions=" + JSON.stringify(this.content.costSessions);
+            }
+            
+            this.newStrategyModal.isActive = false;
+        },
+        onCostSessionChange: function(event) {
+            const newIndex = this.content.costSessions.findIndex(s => s.name == event.target.value);
+            this.content.selectedCostIndex = newIndex;
+            document.cookie = "selected_cost_index=" + newIndex;
+        },
+        writeLog: function (level, message) {
+            const now = new Date().toISOString();
+            this.content.logs.push(now + " - " + level + " - " + message);
+            this.$nextTick(function() {
+                const logOutput = document.getElementById("log-output");
+                if (logOutput != null)
+                    logOutput.scrollTop = logOutput.scrollHeight;
+            });
         },
         resetNewModal: function() {
             app.newModal = {
@@ -297,6 +524,7 @@ var app = new Vue({
             };
 
             // Upload the CSV file with the user specified properties
+            app.writeLog("INFO", "Uploading CSV with user specified properties...");
             uploadCSV(app.newModal.selectedFile, inputs)
                 .then(response => {
                     // Hide modal
@@ -307,12 +535,16 @@ var app = new Vue({
                     // Show metrics, etc.
                     app.content.isActive = true;
                     app.content.report = response;
+
+                    app.writeLog("INFO", "Successfully uploaded CSV and retrieved results!");
                 },
                 error => {
                     // Show error
                     app.newModal.isLoading = false;
                     app.newModal.hasError = true;
                     app.newModal.errorMessage = error.errorMessage;
+
+                    app.writeLog("ERROR", error.errorMessage);
                 });
         }
     }

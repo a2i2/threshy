@@ -30,15 +30,20 @@ def main(config=None):
 
     args = parser.parse_args()
 
+    if 'PORT' in os.environ:
+        port = int(os.environ['PORT'])
+    else:
+        port = args.port
+
     LOGGER.info("Starting visualisation web app...")
     app = VisualiseWebApp()
-    app.listen(args.port)
+    app.listen(port, address="0.0.0.0")
 
     # Ensure CTRL+C will close the app
     signal.signal(signal.SIGINT, app.signal_handler)
     tornado.ioloop.PeriodicCallback(app.try_exit, 100).start()
 
-    LOGGER.info("Server started at: http://localhost:%i", args.port)
+    LOGGER.info("Server started at: http://localhost:%i", port)
 
     tornado.ioloop.IOLoop.instance().start()
 

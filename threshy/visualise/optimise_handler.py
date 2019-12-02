@@ -2,14 +2,16 @@ import os
 import json
 from pathlib import Path
 
-import tornado.web
+import numpy as np
 import pandas as pd
+import tornado.web
+
 from surround.experiment.gcloud_storage_driver import GCloudStorageDriver
-from .visualise_classifier import get_results
+from .optimise import optimise
 
 BUCKET_URI = os.environ["BUCKET_URI"] if "BUCKET_URI" in os.environ else None
 
-class MetricsHandler(tornado.web.RequestHandler):
+class OptimiseHandler(tornado.web.RequestHandler):
     def get(self):
         filename = self.get_cookie("filename")
 
@@ -22,16 +24,23 @@ class MetricsHandler(tornado.web.RequestHandler):
             min_value = self.get_cookie("min_value", 0)
             max_value = self.get_cookie("max_value", 1)
             sep = self.get_cookie("separator", ",")
+            selected_cost_index = self.get_cookie("selected_cost_index", 0)
+            cost_sessions = self.get_cookie("cost_sessions", None)
 
-            labels = self.get_cookie("labels", "[]")
-            labels = json.loads(labels)
-
-            thresholds = []
-            for label in labels:
-                thresh = self.get_cookie(label + "_threshold", None)
-
-                if thresh:
-                    thresholds.append(float(thresh))
+            if cost_sessions == "":
+                cost_data = {
+                    "matrix": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    "portionSize": 1000,
+                    "estimateSize": 10000
+                }
+            else:
+                selected_cost_index = int(selected_cost_index)
+                cost_sessions = json.loads(cost_sessions)
+                cost_data = {
+                    "matrix": np.mean([m["matrix"] for m in cost_sessions[selected_cost_index]["costMatrices"]], axis=0),
+                    "portionSize": int(cost_sessions[selected_cost_index]["portionSize"]),
+                    "estimateSize": int(cost_sessions[selected_cost_index]["estimateSize"])
+                }
 
             path = os.path.join(str(Path.home()), ".surround", ".visualiser", filename)
 
@@ -43,7 +52,6 @@ class MetricsHandler(tornado.web.RequestHandler):
                 driver.pull(filename + ".gt.npy", local_path=path + ".gt.npy", override_ok=True)
 
             if not os.path.exists(path):
-                print("Failed to find file in cookie!")
                 self.clear_all_cookies()
                 self.set_status(404)
                 return
@@ -53,10 +61,6 @@ class MetricsHandler(tornado.web.RequestHandler):
             file_contents.columns = [i.strip() for i in file_contents.columns]
             file_contents.fillna(value="UNKNOWN", inplace=True)
 
-            if gt_label not in file_contents:
-                self.set_status(400)
-                return
-
             # Calculate matrices and return results
             inputs = {
                 "id_column": id_label,
@@ -64,7 +68,7 @@ class MetricsHandler(tornado.web.RequestHandler):
                 "reject_label": reject_label,
                 "min": int(min_value),
                 "max": int(max_value),
-                "thresholds": thresholds
+                "cost": cost_data
             }
 
             if prob_label:
@@ -73,7 +77,10 @@ class MetricsHandler(tornado.web.RequestHandler):
             if target_label:
                 inputs["target_label"] = target_label
 
+            results = optimise(file_contents, inputs, path + ".gt.npy")
+
             self.set_status(200)
-            self.write(get_results(file_contents, inputs, path + ".gt.npy"))
+            self.write(results)
         else:
+            self.clear_all_cookies()
             self.set_status(404)
