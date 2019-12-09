@@ -163,7 +163,7 @@ const costsScreen = {
     },
     template: `
         <div v-if="value != null" class="screen-container">
-            <p class="title">Cost Estimation</p>
+            <p class="title">Add Costs</p>
             <hr class="hr" />
             
             <article class="message is-info">
