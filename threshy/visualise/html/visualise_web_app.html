@@ -51,12 +51,7 @@
                     <aside class="menu">
                         <ul class="menu-list">
                             <li><a v-on:click="selectedScreen = 'about'" :class="{ 'is-active': selectedScreen == 'about' }">About</a></li>
-                            <li>
-                                <a v-on:click="selectedScreen = 'upload'" :class="{ 'is-active': selectedScreen == 'upload' }">Prepare & Upload</a>
-                                <ul>
-                                    <li><a v-on:click="selectedScreen = 'settings'" :class="{ 'is-active': selectedScreen == 'settings' }">Upload Settings</a></li>
-                                </ul>
-                            </li>
+                            <li><a v-on:click="selectedScreen = 'upload'" :class="{ 'is-active': selectedScreen == 'upload' || selectedScreen == 'settings' }">Prepare & Upload</a></li>
                             <li><a v-on:click="selectedScreen = 'visualise'" :class="{ 'is-active': selectedScreen == 'visualise' }">Visualise & Explore</a></li>
                             <li><a v-on:click="selectedScreen = 'cost'" :class="{ 'is-active': selectedScreen == 'cost' }">Cost Estimation</a></li>
                             <li><a v-on:click="selectedScreen = 'optimise'" :class="{ 'is-active': selectedScreen == 'optimise' }">Optimise</a></li>
