@@ -71,7 +71,15 @@ const reviewScreen = {
                 return costSessions[this.selectedCostIndex]
             }
 
-            return null;
+            return {
+                costMatrices: [
+                    {
+                        matrix: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                        portionSize: 1000,
+                        estimateSize: 10000,
+                    }
+                ]
+            };
         }
     },
     methods: {
@@ -98,7 +106,6 @@ const reviewScreen = {
         },
         fetchCostMatrix: function() {
             const request = new XMLHttpRequest();
-            const costIndex = this.selectedCostIndex;
             const self = this;
 
             request.onreadystatechange = function() {
