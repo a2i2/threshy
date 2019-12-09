@@ -1,10 +1,15 @@
+const FILE_INPUT_SOURCE = 0;
+const URL_INPUT_SOURCE = 1;
+
 const uploadScreen = {
     props: {
         value: {
             type: Object,
             default: function() {
                 return {
+                    selectedInput: FILE_INPUT_SOURCE,
                     selectedFile: null,
+                    selectedURL: null,
                     selectedProblem: 0,
                     settingsData: null,
                     results: null,
@@ -41,10 +46,25 @@ const uploadScreen = {
             };
             this.$emit("input", newValue);
         },
+        onInputSourceSelect: function(event) {
+            const newValue = {
+                ...this.value,
+                selectedInput: event.target.selectedIndex
+            };
+            this.$emit("input", newValue);
+        },
+        onNewURL: function(event) {
+            const newValue = {
+                ...this.value,
+                selectedURL: event.target.value
+            };
+            this.$emit("input", newValue);
+        },
         validate: function() {
             const data = this.value;
             const settings = this.value.settingsData;
 
+            // TODO: Perform client-side validation
             return true;
         },
         submitForm: function() {
@@ -59,7 +79,6 @@ const uploadScreen = {
             const settings = this.value.settingsData;
 
             const form = new FormData();
-            form.append("file", data.selectedFile);
             form.append("idLabel", settings.idColumn);
             form.append("groundTruthLabel", settings.truthColumn);
             form.append("rejectLabel", settings.rejectLabel);
@@ -72,6 +91,11 @@ const uploadScreen = {
 
             if (settings.probabilityColumn != null)
                 form.append("probabilityLabel", settings.probabilityColumn);
+
+            if (data.selectedInput == FILE_INPUT_SOURCE)
+                form.append("file", data.selectedFile);
+            else
+                form.append("url", data.selectedURL);
 
             var request = new XMLHttpRequest();
             request.onreadystatechange = function() {
@@ -142,6 +166,19 @@ const uploadScreen = {
                     </div>
                     <div class="level-item">
                         <div class="field">
+                            <label class="label">Input Source:</label>
+                            <div class="control">
+                                <div class="select">
+                                    <select @change="onInputSourceSelect">
+                                        <option :selected="value.selectedInput == 0">File</option>
+                                        <option :selected="value.selectedInput == 1">URL (example included)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="value.selectedInput == 0" class="level-item">
+                        <div class="field">
                             <label class="label">File:</label>
                             <div class="control">
                                 <div class="file has-name">
@@ -154,6 +191,14 @@ const uploadScreen = {
                                         <span class="file-name">{{ value.selectedFile != null ? value.selectedFile.name : "None selected" }}</span>
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="value.selectedInput == 1" class="level-item">
+                        <div class="field">
+                            <label class="label">URL:</label>
+                            <div class="control">
+                                <input :value="value.selectedURL" @input="onNewURL" class="input" type="text" />
                             </div>
                         </div>
                     </div>

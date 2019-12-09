@@ -1,6 +1,7 @@
 import io
 import os
 import json
+import requests
 from pathlib import Path
 
 import tornado.web
@@ -12,7 +13,8 @@ BUCKET_URI = os.environ["BUCKET_URI"] if "BUCKET_URI" in os.environ else None
 
 class UploadHandler(tornado.web.RequestHandler):
     def post(self):
-        if 'file' not in self.request.files:
+        url = self.get_body_argument("url", default=None)
+        if not url and 'file' not in self.request.files:
             self.set_status(400)
             self.write({
                 "errorMessage": "No file included in the request!"
@@ -29,9 +31,22 @@ class UploadHandler(tornado.web.RequestHandler):
         sep = self.get_body_argument("separator")
 
         # Get the uploaded file as a file-like object
-        uploaded_file = self.request.files['file'][0]
-        filename = uploaded_file['filename'].replace(' ', '_')
-        uploaded_file = io.BytesIO(uploaded_file['body'])
+        if url:
+            # Download the file from the URL provided by the user
+            try:
+                uploaded_file = requests.get(url)
+                uploaded_file = io.BytesIO(uploaded_file.content)
+                filename = os.path.basename(url).replace(' ', '_')
+            except Exception:
+                self.set_status(400)
+                self.write({
+                    "errorMessage": "Failed to download from the URL provided!"
+                })
+                return
+        else:
+            uploaded_file = self.request.files['file'][0]
+            filename = uploaded_file['filename'].replace(' ', '_')
+            uploaded_file = io.BytesIO(uploaded_file['body'])
 
         # Read the uploaded file as CSV
         file_contents = pd.read_csv(uploaded_file, sep=sep, header=0, engine='python')

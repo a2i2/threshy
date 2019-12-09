@@ -47,6 +47,8 @@ var app = new Vue({
     data: {
         selectedScreen: "upload",
         uploadScreenData: {
+            selectedInput: 0,
+            selectedURL: "https://storage.googleapis.com/threshy-examples/test.csv",
             selectedFile: null,
             selectedProblem: 0,
             hasError: false,
