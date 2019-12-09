@@ -63,8 +63,20 @@ const exportScreen = {
     },
     template: `
         <div class="screen-container">
-            <p class="title">Export</p>
+            <p class="title">Review & Export</p>
             <hr class="hr" />
+
+            <article class="message is-info">
+                <div class="message-header">
+                    <p>
+                        <span class="icon"><i class="fas fa-info-circle"></i></span>
+                        <span>Instructions</span>
+                    </p>
+                </div>
+                <div class="message-body">
+                    <p>Review & Export instructions here...</p>
+                </div>
+            </article>
 
             <button v-on:click="exportJSON" :class="{ 'is-loading': isLoading }" class="button is-primary">
                 <span class="icon"><i class="fas fa-download"></i></span>
