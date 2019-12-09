@@ -235,23 +235,56 @@ const costsScreen = {
                             <confusion-matrix is-editable name="cost-matrix" :report="value.costSessions[selectedCostIndex].costMatrices[selectedCostMatrixIndex]" :on-new-matrix="onNewCostMatrix"></confusion-matrix>
                         </div>
                     </div>
-                    
-                    <div class="level">
-                        <div class="level-item">
-                            <table class="table" style="clear: both">
-                                <tr>
-                                    <td><strong>Total True Positive Cost:</strong></td>
-                                    <td>{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[0]) : "N/A" }}</td>
-                                    <td><strong>Total False Positive Cost:</strong></td>
-                                    <td>{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[1]) : "N/A" }}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Total Missed Positive Cost:</strong></td>
-                                    <td>{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[2]) : "N/A" }}</td>
-                                    <td><strong>Total Reject Cost:</strong></td>
-                                    <td>{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[3]) : "N/A" }}</td>
-                                </tr>
-                            </table>
+                </div>
+            </div>
+
+            <p class="title is-4">Results:</p>
+            <div class="columns">
+                <div class="column">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level" style="margin-bottom: 0">
+                                <div class="level-item">
+                                    <p class="title is-3">{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[0]) : "N/A" }}</p>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-item">
+                                    <p class="subtitle">Total True Positives Cost</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level" style="margin-bottom: 0">
+                                <div class="level-item">
+                                    <p class="title is-3">{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[1]) : "N/A" }}</p>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-item">
+                                    <p class="subtitle">Total False Positives Cost</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level" style="margin-bottom: 0">
+                                <div class="level-item">
+                                    <p class="title is-3">{{ value.costSessions[selectedCostIndex].results != null ? ("$" + value.costSessions[selectedCostIndex].results.summary[2]) : "N/A" }}</p>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-item">
+                                    <p class="subtitle">Total Missed Positives Cost</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
