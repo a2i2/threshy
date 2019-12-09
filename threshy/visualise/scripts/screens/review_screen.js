@@ -191,7 +191,7 @@ const reviewScreen = {
                     <div class="level-item">
                         <button v-on:click="$emit('screen-change', 'export')" class="button is-info">
                             <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
-                            <span>Export</span>
+                            <span>Next</span>
                         </button>
                     </div>
                 </div>

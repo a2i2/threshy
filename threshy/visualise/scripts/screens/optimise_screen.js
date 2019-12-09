@@ -249,7 +249,7 @@ const optimiseScreen = {
                     <div class="level-item">
                         <button v-on:click="$emit('screen-change', 'review')" class="button is-info">
                             <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
-                            <span>Review</span>
+                            <span>Next</span>
                         </button>
                     </div>
                     <div class="level-item">

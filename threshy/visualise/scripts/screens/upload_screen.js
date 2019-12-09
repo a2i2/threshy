@@ -171,7 +171,7 @@ const uploadScreen = {
                 <div class="level-right">
                     <button v-on:click="submitForm" :class="{ 'is-loading': isLoading }" class="button is-info">
                         <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
-                        <span>Visualise & Explore</span>
+                        <span>Next</span>
                     </button>
                 </div>
             </div>

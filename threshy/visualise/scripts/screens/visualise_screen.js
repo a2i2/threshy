@@ -191,7 +191,7 @@ const visualiseScreen = {
                     <div class="level-item">
                         <button v-on:click="$emit('screen-change', 'cost')" class="button is-info">
                             <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
-                            <span>Cost Estimation</span>
+                            <span>Next</span>
                         </button>
                     </div>
                     <div class="level-item">
