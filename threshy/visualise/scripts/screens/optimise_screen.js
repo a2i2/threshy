@@ -137,6 +137,7 @@ const optimiseScreen = {
             this.$refs.log.writeLog("INFO", "Requesting metrics for new thresholds...");
         },
         optimise: function() {
+            const startTime = new Date();
             const self = this;
             const request = new XMLHttpRequest();
             request.onreadystatechange = function() {
@@ -149,6 +150,9 @@ const optimiseScreen = {
                             self.$refs.log.writeLog("INFO", "Setting label `" + label + "` threshold to: " + results.thresholds[i]);
                             document.cookie = label + "_threshold=" + results.thresholds[i];
                         });
+
+                        const timeInSec = ((new Date()) - startTime) / 1000;
+                        self.$refs.log.writeLog("INFO", "Took " + timeInSec + " seconds!");
 
                         const newValue = {
                             ...self.value,
