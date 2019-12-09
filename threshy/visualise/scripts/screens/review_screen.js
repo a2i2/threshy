@@ -85,7 +85,7 @@ const reviewScreen = {
     template: `
         <div class="screen-container">
         <p class="title">
-            <span>Review</span>
+            <span>Fine Tuning</span>
             <span v-if="isLoading" class="icon" style="margin-left: 10px"><i class="fas fa-sync fa-spin"></i></span>
         </p>
             <hr class="hr" />
@@ -99,7 +99,7 @@ const reviewScreen = {
                     </p>
                 </div>
                 <div class="message-body">
-                    <p>Review instructions here...</p>
+                    <p>Fine tuning instructions here...</p>
                 </div>
             </article>
 
