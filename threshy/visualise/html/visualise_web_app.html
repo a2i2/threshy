@@ -33,6 +33,9 @@
                     <a class="navbar-item" href="./">
                         Home
                     </a>
+                    <a class="navbar-item" v-on:click="selectedScreen = 'about'">
+                        About
+                    </a>
                 </div>
         
                 <div class="navbar-end">
@@ -47,6 +50,7 @@
                 <div class="column is-one-fifth">
                     <aside class="menu">
                         <ul class="menu-list">
+                            <li><a v-on:click="selectedScreen = 'about'" :class="{ 'is-active': selectedScreen == 'about' }">About</a></li>
                             <li>
                                 <a v-on:click="selectedScreen = 'upload'" :class="{ 'is-active': selectedScreen == 'upload' }">Prepare & Upload</a>
                                 <ul>
@@ -62,6 +66,7 @@
                     </aside>
                 </div>
                 <div class="column">
+                    <about-screen @screen-change="onChangeScreen" v-if="selectedScreen == 'about'"></about-screen>
                     <upload-screen v-model="uploadScreenData" @screen-change="onChangeScreen" v-if="selectedScreen == 'upload'"></upload-screen>
                     <settings-screen v-model="uploadScreenData.settingsData" @screen-change="onChangeScreen" v-if="selectedScreen == 'settings'"></settings-screen>
                     <visualise-screen v-model="visualiseScreenData" @screen-change="onChangeScreen" v-if="selectedScreen == 'visualise'"></visualise-screen>
@@ -84,6 +89,7 @@
         <script type="text/javascript" src="./scripts/screens/optimise_screen.js"></script>
         <script type="text/javascript" src="./scripts/screens/review_screen.js"></script>
         <script type="text/javascript" src="./scripts/screens/export_screen.js"></script>
+        <script type="text/javascript" src="./scripts/screens/about_screen.js"></script>
 
         <script type="text/javascript" src="./scripts/main.js"></script>
     </body>
