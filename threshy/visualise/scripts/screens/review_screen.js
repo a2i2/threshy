@@ -7,7 +7,8 @@ const reviewScreen = {
             selectedIndex: 0,
             thresholds: [],
             currentRequests: [],
-            results: null
+            results: null,
+            costSummary: [0, 0, 0, 0]
         }
     },
     mounted: function() {
@@ -54,6 +55,23 @@ const reviewScreen = {
         },
         isLoading() {
             return this.currentRequests.length > 0;
+        },
+        selectedCostIndex() {
+            const cookie = getCookie("selected_cost_index");
+            if (cookie != "") {
+                return parseInt(cookie);
+            }
+
+            return 0;
+        },
+        costSession() {
+            const cookie = getCookie("cost_sessions");
+            if (cookie != "") {
+                const costSessions = JSON.parse(cookie);
+                return costSessions[this.selectedCostIndex]
+            }
+
+            return null;
         }
     },
     methods: {
@@ -64,6 +82,7 @@ const reviewScreen = {
                 if (request.readyState == 4) {
                     if (request.status == 200) {
                         self.results = JSON.parse(request.response);
+                        self.fetchCostMatrix();
                     }
                     else {
                         // TODO: No results found
@@ -76,6 +95,29 @@ const reviewScreen = {
             request.open("GET", "./metrics", true);
             request.send();
             self.currentRequests.push(request);
+        },
+        fetchCostMatrix: function() {
+            const request = new XMLHttpRequest();
+            const costIndex = this.selectedCostIndex;
+            const self = this;
+
+            request.onreadystatechange = function() {
+                if (request.readyState == 4) {
+                    if (request.status == 200) {
+                        const response = JSON.parse(request.response);
+                        self.costSummary = response.summary;
+                    }
+                }
+            }
+
+            request.open("POST", "./cost_matrix", true);
+            request.setRequestHeader("Content-Type", "application/json");
+            request.send(JSON.stringify({
+                matrices: this.results.matrices,
+                costMatrices: this.costSession.costMatrices.map(obj => obj.matrix),
+                portionSize: parseInt(this.costSession.portionSize),
+                estimateSize: parseInt(this.costSession.estimateSize)
+            }));
         },
         onThresholdChange: function(value, label) {
             document.cookie = label + "_threshold=" + value;
@@ -154,6 +196,57 @@ const reviewScreen = {
                             <div class="level">
                                 <div class="level-item">
                                     <p class="subtitle">Missed Positives</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="columns">
+                <div class="column">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level" style="margin-bottom: 0">
+                                <div class="level-item">
+                                    <p class="title is-3">{{ costSummary != null ? '$' + costSummary[0] : 'N/A' }}</p>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-item">
+                                    <p class="subtitle">Total True Positives Cost</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level" style="margin-bottom: 0">
+                                <div class="level-item">
+                                    <p class="title is-3">{{ costSummary != null ? '$' + costSummary[1] : 'N/A' }}</p>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-item">
+                                    <p class="subtitle">Total False Positives Cost</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level" style="margin-bottom: 0">
+                                <div class="level-item">
+                                    <p class="title is-3">{{ costSummary != null ? '$' + costSummary[2] : 'N/A' }}</p>
+                                </div>
+                            </div>
+                            <div class="level">
+                                <div class="level-item">
+                                    <p class="subtitle">Total Missed Positives Cost</p>
                                 </div>
                             </div>
                         </div>
