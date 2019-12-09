@@ -5,6 +5,7 @@ const optimiseScreen = {
     data: function() {
         return {
             isOptimising: false,
+            showWarning: false,
             logs: [],
             outputType: "json"
         }
@@ -107,6 +108,14 @@ const optimiseScreen = {
         }
     },
     methods: {
+        onNext: function() {
+            if (this.value == null || this.value.results == null) {
+                this.showWarning = true;
+                return;
+            }
+
+            this.$emit('screen-change', 'review');
+        },
         requestResults: function() {
             const self = this;
             const request = new XMLHttpRequest();
@@ -174,6 +183,14 @@ const optimiseScreen = {
                     <p>Optimisation instructions here...</p>
                 </div>
             </article>
+
+            <div v-if="showWarning" class="notification is-warning">
+                <p>
+                    <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
+                    <span><strong>WARNING:</strong> You haven't optimised yet! Please do so before moving on.</span>
+                </p>
+                <button v-on:click="showWarning = false" class="delete"></button>
+            </div>
 
             <div class="field has-addons">
                 <div class="control">
@@ -247,7 +264,7 @@ const optimiseScreen = {
                 <div class="level-left"></div>
                 <div class="level-right">
                     <div class="level-item">
-                        <button v-on:click="$emit('screen-change', 'review')" class="button is-info">
+                        <button v-on:click="onNext" class="button is-info">
                             <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
                             <span>Next</span>
                         </button>
