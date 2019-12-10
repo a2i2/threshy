@@ -48,7 +48,8 @@ const uploadScreen = {
         onInputSourceSelect: function(event) {
             const newValue = {
                 ...this.value,
-                selectedInput: event.target.selectedIndex
+                selectedInput: event.target.selectedIndex,
+                selectedProblem: event.target.selectedIndex == 1 ? 2 : 0
             };
             this.$emit("input", newValue);
         },
