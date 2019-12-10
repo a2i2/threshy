@@ -19,7 +19,7 @@ const uploadScreen = {
     data: function() {
         return {
             instructions: [
-                "Binary instructions here...",
+                "id, ground_truth, probabilities",
                 "Multi-class instructions here...",
                 "Mutli-label instructions here..."
             ],
@@ -132,9 +132,44 @@ const uploadScreen = {
                         <span>Instructions</span>
                     </p>
                 </div>
-                <div class="message-body">
-                    <p>Text shared across problem types here...</p>
-                    <p>{{ instructions[value.selectedProblem] }}</p>
+                <div class="message-body content">
+                    <b>Welcome to Threshy!</b>
+                    <p>Threshy will help you set a decision threshold for an intelligent web service.</p>                    
+                    
+                    <b>Getting Started</b>
+                    <ol>
+                    <li>Prepare a CSV file with manually labelled ground truth values and the confidence values returned by a web service.</li>
+                    <li>Upload the CSV file to Threshy.</li>
+                    </ol>                                        
+                                        
+                    <b>Sample CSV snippets</b>
+                    <div v-if="value.selectedProblem === 0" style="width:300px">
+                    <p>For binary classification problems:</p>
+                    <p>
+                      id, ground_truth, probability
+                      image_00001, cat,  0.89           
+                    </p>
+                    </div>
+                    <div v-else-if="value.selectedProblem === 1" style="width:300px">
+                    <p>For multi-class classification problems:</p>
+                    <p>
+                      id, ground_truth, cat, dog, chicken
+                      image_00001, cat, 0.89, 0.03, 0.08
+                      image_00002, chicken, 0.09, 0.01, 0.90           
+                    </p>
+                    </div>
+                    <div v-else style="width:300px">
+                    <p>For multi-label classification problems:</p>
+                    <p>
+                      id, ground_truth, cat, dog, chicken
+                      image_00001, cat, 0.89, 0.03, 0.08
+                      image_00001, chicken, 0.09, 0.01, 0.90  
+                    </p>
+                    </div>
+                    <br/>
+                    
+                    <b>Demo</b>
+                    <p>Note that the URL input source has an example for a multi-class multi-label classification problem.</p>
                 </div>
             </article>
 
