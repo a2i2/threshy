@@ -112,19 +112,6 @@ const settingsScreen = {
 
             <div class="field is-horizontal">
                 <div class="field-label">
-                    <label class="label">Reject Label: </label>
-                </div>
-                <div class="field-body">
-                    <div class="field">
-                        <div class="control is-expanded">
-                            <input v-model="rejectLabel" class="input" type="text" placeholder="Default: REJECT" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="field is-horizontal">
-                <div class="field-label">
                     <label class="label">Target Label: </label>
                 </div>
                 <div class="field-body">
