@@ -164,11 +164,11 @@ const settingsScreen = {
 
             <button v-on:click="onSave" class="button is-success">
                 <span class="icon"><i class="fas fa-save"></i></span>
-                <span>Save & Go back</span>
+                <span>Save</span>
             </button>
             <button v-on:click="$emit('screen-change', 'upload')" class="button is-danger">
                 <span class="icon"><i class="fas fa-trash"></i></span>
-                <span>Discard & Go back</span>
+                <span>Discard</span>
             </button>
         </div>
     `
