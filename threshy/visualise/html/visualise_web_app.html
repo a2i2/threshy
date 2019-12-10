@@ -50,12 +50,12 @@
                 <div class="column is-one-fifth">
                     <aside class="menu">
                         <ul class="menu-list">
-                            <li><a v-on:click="selectedScreen = 'upload'" :class="{ 'is-active': selectedScreen == 'upload' || selectedScreen == 'settings' }">Prepare & Upload</a></li>
-                            <li><a :class="{ 'is-active': selectedScreen == 'visualise' }">Visualise & Explore</a></li>
-                            <li><a :class="{ 'is-active': selectedScreen == 'cost' }">Add Costs</a></li>
-                            <li><a :class="{ 'is-active': selectedScreen == 'optimise' }">Optimise</a></li>
-                            <li><a :class="{ 'is-active': selectedScreen == 'review' }">Fine Tuning</a></li>
-                            <li><a :class="{ 'is-active': selectedScreen == 'export' }">Review & Export</a></li>
+                            <li><a v-on:click="navigate('upload')" :class="{ 'is-active': selectedScreen == 'upload' || selectedScreen == 'settings'}">Prepare & Upload</a></li>
+                            <li><a v-on:click="navigate('visualise')" :class="{ 'is-active': selectedScreen == 'visualise', 'is-disabled': allowedScreens.indexOf('visualise') < 0 }">Visualise & Explore</a></li>
+                            <li><a v-on:click="navigate('cost')" :class="{ 'is-active': selectedScreen == 'cost', 'is-disabled': allowedScreens.indexOf('cost') < 0 }">Add Costs</a></li>
+                            <li><a v-on:click="navigate('optimise')" :class="{ 'is-active': selectedScreen == 'optimise', 'is-disabled': allowedScreens.indexOf('optimise') < 0 }">Optimise</a></li>
+                            <li><a v-on:click="navigate('review')" :class="{ 'is-active': selectedScreen == 'review', 'is-disabled': allowedScreens.indexOf('review') < 0 }">Fine Tuning</a></li>
+                            <li><a v-on:click="navigate('export')" :class="{ 'is-active': selectedScreen == 'export', 'is-disabled': allowedScreens.indexOf('export') < 0 }">Review & Export</a></li>
                         </ul>
                     </aside>
                 </div>

@@ -44,6 +44,16 @@ aside ul {
     background-color: rgb(251, 251, 251)
 }
 
+aside ul li a.is-disabled {
+    color: gray;
+}
+
+aside ul li a.is-disabled:hover {
+    cursor: not-allowed;
+    color: gray;
+    background-color: rgb(251, 251, 251)
+}
+
 .log-output {
     width: 100%;
     height: 300px;

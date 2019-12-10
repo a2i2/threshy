@@ -46,6 +46,7 @@ var app = new Vue({
     el: "#app",
     data: {
         selectedScreen: "upload",
+        allowedScreens: ["upload"],
         uploadScreenData: {
             selectedInput: 0,
             selectedURL: "https://storage.googleapis.com/threshy-examples/test.csv",
@@ -70,7 +71,14 @@ var app = new Vue({
         costResults: null,
     },
     methods: {
+        navigate: function(screen) {
+            if (this.allowedScreens.indexOf(screen) >= 0) {
+                this.selectedScreen = screen;
+            }
+        },
         onChangeScreen: function(screen) {
+            if (this.allowedScreens.indexOf(screen) < 0)
+                this.allowedScreens.push(screen);
             this.selectedScreen = screen;
         },
         onNewMetricResult: function(result) {
