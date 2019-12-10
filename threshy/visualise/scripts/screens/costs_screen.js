@@ -15,7 +15,7 @@ const costsScreen = {
                 }
             }
         },
-        results: Object
+        results: Object,
     },
     data: function() {
         return {
@@ -147,6 +147,7 @@ const costsScreen = {
                             costSessions
                         }
                         self.$emit('input', newValue);
+                        self.$emit('new-costs', response.summary);
                     }
                 }
             }

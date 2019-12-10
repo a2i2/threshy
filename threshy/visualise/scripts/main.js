@@ -63,17 +63,21 @@ var app = new Vue({
                 max: "1",
                 separator: ","
             },
-            results: null
-        },
-        visualiseScreenData: {
-            results: null
         },
         costScreenData: null,
-        optimiseScreenData: null
+        optimiseScreenData: null,
+        metricResults: null,
+        costResults: null,
     },
     methods: {
         onChangeScreen: function(screen) {
             this.selectedScreen = screen;
+        },
+        onNewMetricResult: function(result) {
+            this.metricResults = result;
+        },
+        onNewCostResult: function(result) {
+            this.costResults = result;
         }
     }
 });

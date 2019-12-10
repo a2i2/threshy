@@ -1,10 +1,10 @@
 const visualiseScreen = {
     props: {
-        value: Object
+        value: Object,
+        metricResults: Object
     },
     data: function() {
         return {
-            results: null,
             selectedIndex: 0,
             logs: [],
             globalThreshold: 0.51,
@@ -13,10 +13,10 @@ const visualiseScreen = {
     },
     computed: {
         matrices() {
-            return this.results.matrices.map(matrix => {
+            return this.metricResults.matrices.map(matrix => {
                 return {
                     matrix: matrix,
-                    classes: this.results.labels
+                    classes: this.metricResults.labels
                 }
             });
         },
@@ -50,14 +50,10 @@ const visualiseScreen = {
             request.onreadystatechange = function() {
                 if (request.readyState == 4) {
                     if (request.status == 200) {
-                        self.results = JSON.parse(request.response);
-                        self.writeLog("INFO", "Received matrices & summaries!")
+                        const response = JSON.parse(request.response);
 
-                        // Expose results to global state
-                        self.$emit('input', {
-                            ...self.value,
-                            results: self.results
-                        })
+                        self.writeLog("INFO", "Received matrices & summaries!")
+                        self.$emit('new-metrics', response);
                     }
                     else {
                         // TODO: No results found
@@ -90,7 +86,7 @@ const visualiseScreen = {
             </p>
             <hr class="hr" />
 
-            <div v-if="results != null">
+            <div v-if="metricResults != null">
             <article class="message is-info">
                 <div class="message-header">
                     <p>
@@ -110,7 +106,7 @@ const visualiseScreen = {
                         <div class="card-content">
                             <div class="level" style="margin-bottom: 0">
                                 <div class="level-item">
-                                    <p class="title is-3">{{ results.summary[0] }}</p>
+                                    <p class="title is-3">{{ metricResults.summary[0] }}</p>
                                 </div>
                             </div>
                             <div class="level">
@@ -126,7 +122,7 @@ const visualiseScreen = {
                         <div class="card-content">
                             <div class="level" style="margin-bottom: 0">
                                 <div class="level-item">
-                                    <p class="title is-3">{{ results.summary[1] }}</p>
+                                    <p class="title is-3">{{ metricResults.summary[1] }}</p>
                                 </div>
                             </div>
                             <div class="level">
@@ -142,7 +138,7 @@ const visualiseScreen = {
                         <div class="card-content">
                             <div class="level" style="margin-bottom: 0">
                                 <div class="level-item">
-                                    <p class="title is-3">{{ results.summary[2] }}</p>
+                                    <p class="title is-3">{{ metricResults.summary[2] }}</p>
                                 </div>
                             </div>
                             <div class="level">
@@ -164,7 +160,7 @@ const visualiseScreen = {
                     <aside class="menu">
                         <label class="label">Show Label:</label>
                         <ul class="menu-list">
-                            <li v-for="(label, index) in results.labels">
+                            <li v-for="(label, index) in metricResults.labels">
                                 <a :title="label" v-on:click="selectedIndex = index" v-bind:class="{ 'is-active': index == selectedIndex }">
                                     {{ label }}
                                 </a>

@@ -12,10 +12,9 @@ const uploadScreen = {
                     selectedURL: null,
                     selectedProblem: 0,
                     settingsData: null,
-                    results: null,
                 }
             }
-        }
+        },
     },
     data: function() {
         return {
@@ -103,11 +102,7 @@ const uploadScreen = {
                     if (request.status == 200) {
                         const response = JSON.parse(request.response);
                         
-                        const newValue = {
-                            ...self.value,
-                            results: response
-                        };
-                        self.$emit('input', newValue);
+                        self.$emit('new-metrics', response);
                         self.$emit('screen-change', 'visualise');
                     }
                     else if (request.status == 400) {

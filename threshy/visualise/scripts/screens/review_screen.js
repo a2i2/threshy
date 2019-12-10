@@ -1,13 +1,12 @@
 const reviewScreen = {
     props: {
-
+        metricResults: Object,
     },
     data: function() {
         return {
             selectedIndex: 0,
             thresholds: [],
             currentRequests: [],
-            results: null,
             costSummary: [0, 0, 0, 0]
         }
     },
@@ -46,10 +45,10 @@ const reviewScreen = {
             return results;
         },
         matrices() {
-            return this.results.matrices.map(matrix => {
+            return this.metricResults.matrices.map(matrix => {
                 return {
                     matrix: matrix,
-                    classes: this.results.labels
+                    classes: this.metricResults.labels
                 }
             });
         },
@@ -89,7 +88,8 @@ const reviewScreen = {
             request.onreadystatechange = function() {
                 if (request.readyState == 4) {
                     if (request.status == 200) {
-                        self.results = JSON.parse(request.response);
+                        const response = JSON.parse(request.response);
+                        self.$emit('new-metrics', response);
                         self.fetchCostMatrix();
                     }
                     else {
@@ -113,6 +113,7 @@ const reviewScreen = {
                     if (request.status == 200) {
                         const response = JSON.parse(request.response);
                         self.costSummary = response.summary;
+                        self.$emit('new-costs', response.summary);
                     }
                 }
             }
@@ -120,7 +121,7 @@ const reviewScreen = {
             request.open("POST", "./cost_matrix", true);
             request.setRequestHeader("Content-Type", "application/json");
             request.send(JSON.stringify({
-                matrices: this.results.matrices,
+                matrices: this.metricResults.matrices,
                 costMatrices: this.costSession.costMatrices.map(obj => obj.matrix),
                 portionSize: parseInt(this.costSession.portionSize),
                 estimateSize: parseInt(this.costSession.estimateSize)
@@ -139,7 +140,7 @@ const reviewScreen = {
         </p>
             <hr class="hr" />
 
-            <div v-if="results != null">
+            <div v-if="metricResults != null">
             <article class="message is-info">
                 <div class="message-header">
                     <p>
@@ -165,7 +166,7 @@ const reviewScreen = {
                         <div class="card-content">
                             <div class="level" style="margin-bottom: 0">
                                 <div class="level-item">
-                                    <p class="title is-3">{{ results.summary[0] }}</p>
+                                    <p class="title is-3">{{ metricResults.summary[0] }}</p>
                                 </div>
                             </div>
                             <div class="level">
@@ -181,7 +182,7 @@ const reviewScreen = {
                         <div class="card-content">
                             <div class="level" style="margin-bottom: 0">
                                 <div class="level-item">
-                                    <p class="title is-3">{{ results.summary[1] }}</p>
+                                    <p class="title is-3">{{ metricResults.summary[1] }}</p>
                                 </div>
                             </div>
                             <div class="level">
@@ -197,7 +198,7 @@ const reviewScreen = {
                         <div class="card-content">
                             <div class="level" style="margin-bottom: 0">
                                 <div class="level-item">
-                                    <p class="title is-3">{{ results.summary[2] }}</p>
+                                    <p class="title is-3">{{ metricResults.summary[2] }}</p>
                                 </div>
                             </div>
                             <div class="level">
@@ -267,7 +268,7 @@ const reviewScreen = {
                     <aside class="menu">
                         <label class="label">Show Label:</label>
                         <ul class="menu-list">
-                            <li v-for="(label, index) in results.labels">
+                            <li v-for="(label, index) in metricResults.labels">
                                 <a :title="label" v-on:click="selectedIndex = index" v-bind:class="{ 'is-active': index == selectedIndex }">
                                     {{ label }}
                                 </a>

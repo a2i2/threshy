@@ -62,13 +62,13 @@
                 </div>
                 <div class="column">
                     <about-screen @screen-change="onChangeScreen" v-if="selectedScreen == 'about'"></about-screen>
-                    <upload-screen v-model="uploadScreenData" @screen-change="onChangeScreen" v-if="selectedScreen == 'upload'"></upload-screen>
+                    <upload-screen v-model="uploadScreenData" @screen-change="onChangeScreen" @new-metrics="onNewMetricResult" v-if="selectedScreen == 'upload'"></upload-screen>
                     <settings-screen v-model="uploadScreenData.settingsData" @screen-change="onChangeScreen" v-if="selectedScreen == 'settings'"></settings-screen>
-                    <visualise-screen v-model="visualiseScreenData" @screen-change="onChangeScreen" v-if="selectedScreen == 'visualise'"></visualise-screen>
-                    <costs-screen v-model="costScreenData" :results="visualiseScreenData.results" @screen-change="onChangeScreen" v-if="selectedScreen == 'cost'"></costs-screen>
+                    <visualise-screen :metric-results="metricResults" @new-metrics="onNewMetricResult" @screen-change="onChangeScreen" v-if="selectedScreen == 'visualise'"></visualise-screen>
+                    <costs-screen v-model="costScreenData" :results="metricResults" @new-costs="onNewCostResult" @screen-change="onChangeScreen" v-if="selectedScreen == 'cost'"></costs-screen>
                     <optimise-screen v-model="optimiseScreenData" @screen-change="onChangeScreen" v-if="selectedScreen == 'optimise'"></optimise-screen>
-                    <review-screen @screen-change="onChangeScreen" v-if="selectedScreen == 'review'"></review-screen>
-                    <export-screen @screen-change="onChangeScreen" v-if="selectedScreen == 'export'"></export-screen>
+                    <review-screen :metric-results="metricResults" @new-metrics="onNewMetricResult" @new-costs="onNewCostResult" @screen-change="onChangeScreen" v-if="selectedScreen == 'review'"></review-screen>
+                    <export-screen :metric-results="metricResults" :cost-results="costResults" @screen-change="onChangeScreen" v-if="selectedScreen == 'export'"></export-screen>
                 </div>
             </div>
         </div>
