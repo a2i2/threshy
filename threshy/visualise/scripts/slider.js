@@ -11,7 +11,7 @@ const slider = {
     },
     template: `
         <div class="field is-horizontal">
-            <div class="field-label" style="max-width: 200px; overflow: hidden;">
+            <div v-if="sliderLabel != null" class="field-label" style="max-width: 200px; overflow: hidden;">
                 <label class="label" :title="sliderLabel">{{ sliderLabel }}:</label>
             </div>
             <div class="field-body">

@@ -27,7 +27,7 @@ class OptimiseHandler(tornado.web.RequestHandler):
             selected_cost_index = self.get_cookie("selected_cost_index", 0)
             cost_sessions = self.get_cookie("cost_sessions", None)
 
-            if cost_sessions == "":
+            if cost_sessions == "" or not cost_sessions:
                 cost_data = {
                     "matrix": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
                     "portionSize": 1000,

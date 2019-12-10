@@ -23,5 +23,5 @@ class CostHandler(tornado.web.RequestHandler):
         self.set_status(200)
         self.write({
             "cost_results": cost_results.tolist(),
-            "summary": summary.tolist()
+            "summary": [round(cost, 2) for cost in summary]
         })

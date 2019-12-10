@@ -116,7 +116,7 @@ function Matrix(options) {
 
     labels.append("text")
         .attr("transform", "rotate(-90)")
-        .attr("x", -1.5 * y.rangeBand())
+        .attr("x", -1 * y.rangeBand())
         .attr("y", -80)
         .attr("font-size", "1.1em")
         .attr("font-weight", "bold")
@@ -124,8 +124,8 @@ function Matrix(options) {
         .text(verticalAxis);
 
     labels.append("text")
-        .attr("x", 1.5 * x.rangeBand())
-        .attr("y", 3 * y.rangeBand() + 90)
+        .attr("x", 1 * x.rangeBand())
+        .attr("y", 2 * y.rangeBand() + 90)
         .attr("text-anchor", "middle")
         .attr("font-weight", "bold")
         .attr("font-size", "1.1em")
@@ -243,8 +243,8 @@ var confusionMatrixComp = {
                 Matrix({
                     container : '#' + this.containerName,
                     legend    : '#' + this.legendName,
-                    data      : this.report.matrix,
-                    labels    : ["Positive", "Negative", "REJECT"],
+                    data      : this.matrix,
+                    labels    : ["Positive", "Negative"],
                     start_color : '#ffffff',
                     end_color : '#0072ff',
                     is_editable: this.isEditable,
@@ -261,13 +261,17 @@ var confusionMatrixComp = {
     methods: {
         onChange(index, element) {
             const newValue = Number.parseInt(element.value);
-            const matrix = this.report.matrix;
+            const matrix = this.matrix;
             const numCols = matrix[0].length;
             
             const y = Math.floor(index / numCols);
             const x = index - numCols * y
 
             matrix[y][x] = newValue;
+
+            matrix.forEach(row => row.push(0))
+            matrix.push([0, 0, 0])
+
             this.onNewMatrix(matrix);
         }
     },
@@ -277,14 +281,17 @@ var confusionMatrixComp = {
         },
         legendName: function() {
             return "legend-" + this.name;
+        },
+        matrix: function() {
+            return [this.report.matrix[0].slice(0, 2), this.report.matrix[1].slice(0, 2)]
         }
     },
     mounted: function() {
         Matrix({
             container : '#' + this.containerName,
             legend    : '#' + this.legendName,
-            data      : this.report.matrix,
-            labels    : ["Positive", "Negative", "REJECT"],
+            data      : this.matrix,
+            labels    : ["Positive", "Negative"],
             start_color : '#ffffff',
             end_color : '#0072ff',
             is_editable: this.isEditable,
