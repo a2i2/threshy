@@ -168,7 +168,7 @@ const exportScreen = {
                     <tr>
                         <th>Label</th>
                         <th>Threshold</th>
-                        <th>Distrubution</th>
+                        <th>Support</th>
                     </tr>
                 </thead>
                 <tbody>
