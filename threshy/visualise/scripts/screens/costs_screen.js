@@ -181,25 +181,6 @@ const costsScreen = {
 
             <div class="columns">
                 <div class="column">
-                    <label class="label">Cost:</label>
-                    <div class="field has-addons">
-                        <div class="control is-expanded">
-                            <div class="select is-fullwidth">
-                                <select v-on:change="onCostSessionChange">
-                                    <option v-for="(cost, index) in value.costSessions" :selected="index == selectedCostIndex">{{ cost.name }}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="control">
-                            <button v-on:click="newStrategyModal.isActive = true" class="button is-primary">
-                                <span class="icon"><i class="fas fa-plus"></i></span>
-                                <span>New</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                </div>
-                <div class="column">
                     <div class="field" style="clear: both">
                         <label class="label">Portion Size:</label>
                         <div class="control">
