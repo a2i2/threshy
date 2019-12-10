@@ -7,7 +7,7 @@ const optimiseScreen = {
             isOptimising: false,
             showWarning: false,
             logs: [],
-            outputType: "json"
+            outputType: "formatted"
         }
     },
     computed: {
