@@ -243,7 +243,7 @@ var confusionMatrixComp = {
                 Matrix({
                     container : '#' + this.containerName,
                     legend    : '#' + this.legendName,
-                    data      : [this.report.matrix[0].slice(0, 2), this.report.matrix[1].slice(0, 2)],
+                    data      : this.matrix,
                     labels    : ["Positive", "Negative"],
                     start_color : '#ffffff',
                     end_color : '#0072ff',
@@ -261,13 +261,17 @@ var confusionMatrixComp = {
     methods: {
         onChange(index, element) {
             const newValue = Number.parseInt(element.value);
-            const matrix = this.report.matrix;
+            const matrix = this.matrix;
             const numCols = matrix[0].length;
             
             const y = Math.floor(index / numCols);
             const x = index - numCols * y
 
             matrix[y][x] = newValue;
+
+            matrix.forEach(row => row.push(0))
+            matrix.push([0, 0, 0])
+
             this.onNewMatrix(matrix);
         }
     },
@@ -277,13 +281,16 @@ var confusionMatrixComp = {
         },
         legendName: function() {
             return "legend-" + this.name;
+        },
+        matrix: function() {
+            return [this.report.matrix[0].slice(0, 2), this.report.matrix[1].slice(0, 2)]
         }
     },
     mounted: function() {
         Matrix({
             container : '#' + this.containerName,
             legend    : '#' + this.legendName,
-            data      : [this.report.matrix[0].slice(0, 2), this.report.matrix[1].slice(0, 2)],
+            data      : this.matrix,
             labels    : ["Positive", "Negative"],
             start_color : '#ffffff',
             end_color : '#0072ff',
