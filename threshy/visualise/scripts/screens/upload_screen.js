@@ -192,7 +192,7 @@ const uploadScreen = {
                     <div v-if="value.selectedInput == 1" class="level-item">
                         <div class="field">
                             <label class="label">URL:</label>
-                            <div class="control">
+                            <div class="control" style="min-width: 350px">
                                 <input :value="value.selectedURL" @input="onNewURL" class="input" type="text" />
                             </div>
                         </div>
