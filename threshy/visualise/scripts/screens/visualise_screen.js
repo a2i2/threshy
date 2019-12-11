@@ -185,15 +185,15 @@ const visualiseScreen = {
                 <div class="level-left"></div>
                 <div class="level-right">
                     <div class="level-item">
-                        <button v-on:click="$emit('screen-change', 'cost')" class="button is-info">
-                            <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
-                            <span>Next</span>
-                        </button>
-                    </div>
-                    <div class="level-item">
                         <button v-on:click="$emit('screen-change', 'export')" class="button is-info">
                             <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
                             <span>Export</span>
+                        </button>
+                    </div>
+                    <div class="level-item">
+                        <button v-on:click="$emit('screen-change', 'cost')" class="button is-info">
+                            <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
+                            <span>Next</span>
                         </button>
                     </div>
                 </div>
