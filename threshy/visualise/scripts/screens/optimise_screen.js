@@ -176,18 +176,6 @@ const optimiseScreen = {
             <p class="title">Optimise</p>
             <hr class="hr" />
 
-            <article class="message is-info">
-                <div class="message-header">
-                    <p>
-                        <span class="icon"><i class="fas fa-info-circle"></i></span>
-                        <span>Instructions</span>
-                    </p>
-                </div>
-                <div class="message-body">
-                    <p>Optimisation instructions here...</p>
-                </div>
-            </article>
-
             <div v-if="showWarning" class="notification is-warning">
                 <p>
                     <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
@@ -243,7 +231,7 @@ const optimiseScreen = {
                             <tr>
                                 <th>Label</th>
                                 <th>Threshold</th>
-                                <th>Distrubution</th>
+                                <th>Support</th>
                             </tr>
                         </thead>
                         <tbody>
