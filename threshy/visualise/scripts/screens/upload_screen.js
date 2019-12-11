@@ -85,6 +85,7 @@ const uploadScreen = {
             form.append("minValue", settings.min);
             form.append("maxValue", settings.max);
             form.append("separator", settings.separator);
+            form.append("problem", data.selectedProblem);
 
             if (settings.targetLabel != null)
                 form.append("targetLabel", settings.targetLabel);
@@ -138,7 +139,7 @@ const uploadScreen = {
                     
                     <b>Getting Started</b>
                     <ol>
-                    <li>Prepare a CSV file with manually labelled ground truth values and the confidence values returned by a web service.</li>
+                    <li>Prepare a CSV file with manually labelled ground truth values and the confidence values returned by a web service. Make sure the confidence values are in the range of 0 to 1.</li>
                     <li>Upload the CSV file to Threshy.</li>
                     </ol>                                        
                                         
