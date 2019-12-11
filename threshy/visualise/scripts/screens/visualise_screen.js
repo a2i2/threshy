@@ -62,7 +62,7 @@ const visualiseScreen = {
                     self.currentRequests.splice(self.currentRequests.indexOf(request), 1);
                 }
             }
-        
+
             request.open("GET", "./metrics", true);
             request.send();
             self.writeLog("INFO", "Loading matrices & summaries for current session...");
@@ -95,7 +95,7 @@ const visualiseScreen = {
                     </p>
                 </div>
                 <div class="message-body">
-                    <p>Exploration instructions here...</p>
+                    <p>On this page you can experiment with a single threshold applied to all labels and inspect the results for each label.</p>
                 </div>
             </article>
 
@@ -150,7 +150,7 @@ const visualiseScreen = {
                     </div>
                 </div>
             </div>
-            
+
             <h2 class="title is-4">Global Threshold:</h2>
             <slider v-on:change="onThresholdChange" v-model="globalThreshold"></slider>
 

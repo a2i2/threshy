@@ -71,7 +71,7 @@ const costsScreen = {
                 labels = JSON.parse(JSON.parse(labels));
                 return labels;
             }
-            
+
             return [];
         }
     },
@@ -124,7 +124,7 @@ const costsScreen = {
                 }
                 this.$emit('input', newValue);
             }
-            
+
             this.newStrategyModal.isActive = false;
         },
         fetchCostMatrix: function() {
@@ -136,7 +136,7 @@ const costsScreen = {
                 if (request.readyState == 4) {
                     if (request.status == 200) {
                         response = JSON.parse(request.response);
-                        
+
                         const costSessions = self.value.costSessions;
                         costSessions[self.selectedCostIndex] = {
                             ...costSessions[self.selectedCostIndex],
@@ -166,7 +166,7 @@ const costsScreen = {
         <div v-if="value != null" class="screen-container">
             <p class="title">Add Costs</p>
             <hr class="hr" />
-            
+
             <article class="message is-info">
                 <div class="message-header">
                     <p>
@@ -175,7 +175,13 @@ const costsScreen = {
                     </p>
                 </div>
                 <div class="message-body">
-                    <p>Cost estimation instructions here...</p>
+                    <p>On this page you can associate a cost with the result per label.</p>
+                    <br>
+                    <b>Portion size</b>
+                    <p>Portion size indicates how many predictions fall into each box of the confusion matrix shown below.</p>
+                    <br>
+                    <b>Estimate size</b>
+                    <p>Estimate size is the total number of predictions that will be used to calculate the cost i.e. Given an estimate size of 10000 and the current thresholds Threshy calculates the total cost.</p>
                 </div>
             </article>
 

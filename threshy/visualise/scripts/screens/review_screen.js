@@ -135,7 +135,7 @@ const reviewScreen = {
     template: `
         <div class="screen-container">
         <p class="title">
-            <span>Fine Tuning</span>
+            <span>Fine Tune</span>
             <span v-if="isLoading" class="icon" style="margin-left: 10px"><i class="fas fa-sync fa-spin"></i></span>
         </p>
             <hr class="hr" />
