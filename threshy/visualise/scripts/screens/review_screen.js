@@ -135,23 +135,12 @@ const reviewScreen = {
     template: `
         <div class="screen-container">
         <p class="title">
-            <span>Fine Tuning</span>
+            <span>Fine Tune</span>
             <span v-if="isLoading" class="icon" style="margin-left: 10px"><i class="fas fa-sync fa-spin"></i></span>
         </p>
             <hr class="hr" />
 
             <div v-if="metricResults != null">
-            <article class="message is-info">
-                <div class="message-header">
-                    <p>
-                        <span class="icon"><i class="fas fa-info-circle"></i></span>
-                        <span>Instructions</span>
-                    </p>
-                </div>
-                <div class="message-body">
-                    <p>Fine tuning instructions here...</p>
-                </div>
-            </article>
 
             <div v-for="group in thresholdGroups" class="columns">
                 <div v-for="threshold in group" class="column">

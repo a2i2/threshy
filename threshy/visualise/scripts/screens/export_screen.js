@@ -50,7 +50,7 @@ const exportScreen = {
                     </p>
                 </div>
                 <div class="message-body">
-                    <p>Review & Export instructions here...</p>
+                    <p>Export a JSON configuration file to externalise threshold values for your application.</p>
                 </div>
             </article>
 

@@ -176,18 +176,6 @@ const optimiseScreen = {
             <p class="title">Optimise</p>
             <hr class="hr" />
 
-            <article class="message is-info">
-                <div class="message-header">
-                    <p>
-                        <span class="icon"><i class="fas fa-info-circle"></i></span>
-                        <span>Instructions</span>
-                    </p>
-                </div>
-                <div class="message-body">
-                    <p>Optimisation instructions here...</p>
-                </div>
-            </article>
-
             <div v-if="showWarning" class="notification is-warning">
                 <p>
                     <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
@@ -243,7 +231,7 @@ const optimiseScreen = {
                             <tr>
                                 <th>Label</th>
                                 <th>Threshold</th>
-                                <th>Distrubution</th>
+                                <th>Support</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -268,20 +256,21 @@ const optimiseScreen = {
                 <div class="level-left"></div>
                 <div class="level-right">
                     <div class="level-item">
-                        <button v-on:click="onNext" class="button is-info" :disabled="isOptimising">
-                            <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
-                            <span>Next</span>
-                        </button>
-                    </div>
-                    <div class="level-item">
                         <button v-on:click="$emit('screen-change', 'export')" class="button is-info" :disabled="isOptimising">
                             <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
                             <span>Export</span>
                         </button>
                     </div>
+                    <div class="level-item">
+                        <button v-on:click="onNext" class="button is-info" :disabled="isOptimising">
+                            <span class="icon"><i class="fas fa-arrow-circle-right"></i></span>
+                            <span>Next</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+        
     `
 };
 

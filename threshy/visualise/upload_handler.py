@@ -30,6 +30,22 @@ class UploadHandler(tornado.web.RequestHandler):
         max_value = int(self.get_body_argument("maxValue", default=1))
         sep = self.get_body_argument("separator")
 
+        problem = int(self.get_body_argument("problem"))
+
+        if problem == 0:
+            if not prob_label:
+                self.set_status(400)
+                self.write({
+                "errorMessage": "No probability field specified for binary problem."
+                })
+                return
+            elif not target_label:
+                self.set_status(400)
+                self.write({
+                    "errorMessage": "No target_label field specified for a binary problem."
+                })
+                return
+
         # Get the uploaded file as a file-like object
         if url:
             # Download the file from the URL provided by the user
