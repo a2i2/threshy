@@ -1,7 +1,7 @@
 # threshy
 Visualisation Tool
 
-[**Click Here for Demo**](https://threshy-demo-2-ptbk2ijoga-uc.a.run.app)
+[**Click Here for Demo**](http://bit.ly/a2i2-threshy)
 
 ## Prerequisites
 - [Surround](https://github.com/a2i2/surround)
