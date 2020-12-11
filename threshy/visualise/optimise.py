@@ -125,8 +125,12 @@ def get_thresh(input_data):
 
 
 def minimise(np_probs, np_ground_truth):
-    with Pool(cpu_count()) as p:
-        results = p.map(get_thresh, [(i, np_probs, np_ground_truth) for i in range(0, np_probs.shape[1])])
+    # TODO: Patch solution for bad multiprocessing on GCP... revert when fixed
+    #with Pool(cpu_count()) as p:
+    #    results = p.map(get_thresh, [(i, np_probs, np_ground_truth) for i in range(0, np_probs.shape[1])])
+    results = list(range(0, np_probs.shape[1]))
+    for i in results:
+        results[i] = get_thresh((i, np_probs, np_ground_truth))
     return results
 
 
